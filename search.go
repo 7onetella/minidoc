@@ -182,7 +182,7 @@ func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {
 	i++
 	// pad empty space to keep the result row width wider than few character wide
 	log.Debugf("search fragments from doc %s", doc.GetSearchFragments())
-	matched := doc.GetSearchFragments() + "                                   "
+	matched := doc.GetSearchFragments() + "                                                             "
 	s.ResultList.SetCell(rowIndex, i, NewCell(matched, matched, tcell.ColorWhite))
 }
 
