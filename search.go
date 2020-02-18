@@ -77,15 +77,20 @@ func (s *Search) ResetSearchBar() {
 	if ok {
 		input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 
-			if event.Key() == tcell.KeyCtrlN {
-				s.LoadEdit()
-				s.App.SetFocus(s.SearchBar)
-				defer s.App.Draw()
-				return nil
-			}
-
+			//if event.Key() == tcell.KeyCtrlN {
+			//	if !s.App.PagesHandler.HasPage("New") {
+			//		s.App.PagesHandler.AddPage(s.App, NewNewPage("note"))
+			//		s.App.PagesHandler.GotoPageByTitle("New")
+			//		defer s.App.Draw()
+			//	}
+			//	return nil
+			//}
+			//
 			if event.Key() == tcell.KeyEnter {
-				s.ShowSearchResult(input.GetText())
+				done := s.ShowSearchResult(input.GetText())
+				if done {
+					return nil
+				}
 				s.App.SetFocus(s.SearchBar)
 				defer s.App.Draw()
 				return nil
@@ -105,50 +110,34 @@ func (s *Search) ResetSearchBar() {
 const idColumnIndex = 1
 const typeColumnIndex = 0
 
-func (s *Search) ShowSearchResult(searchby string) {
+func (s *Search) ShowSearchResult(searchby string) bool {
 	searchTerms := ""
 	if len(searchby) > 0 {
 		searchTerms = searchby
 	}
 	log.Debug("searching by " + searchTerms)
 
+	if strings.HasPrefix(searchTerms, "@") {
+		s.HandleCommand(searchTerms)
+		return true
+	}
+
 	result := s.App.IndexHandler.Search(searchTerms)
 	if result == nil {
 		s.debug("result is empty")
-		return
+		return false
 	}
 
-	//debug("result size is " + strconv.Itoa(len(result.Items)))
 	s.ResultList.Clear()
 	s.ResultList.InsertColumn(0)
 	s.ResultList.InsertColumn(0)
 	s.ResultList.InsertColumn(0)
-	//s.ResultList.InsertColumn(0)
 
 	// Display search result
 	for _, doc := range result {
 		s.ResultList.InsertRow(0)
 		s.UpdateSearchResultRow(0, doc)
 	}
-
-	//headerCell := func(val string) *tview.TableCell {
-	//	return &tview.TableCell{
-	//		Color:         tcell.ColorYellow,
-	//		Align:         tview.AlignCenter,
-	//		Text:          val,
-	//		NotSelectable: true,
-	//	}
-	//}
-
-	//s.ResultList.InsertRow(0)
-	//i := 0
-	//s.ResultList.SetCell(0, i, headerCell(""))
-	//i++
-	//s.ResultList.SetCell(0, i, headerCell(""))
-	//i++
-	//s.ResultList.SetCell(0, i, headerCell("Title"))
-	//i++
-	//s.ResultList.SetCell(0, i, headerCell(""))
 
 	s.ResultList.SetSelectable(false, false)
 	s.ResultList.SetSeparator(' ')
@@ -159,6 +148,26 @@ func (s *Search) ShowSearchResult(searchby string) {
 
 	s.App.SetFocus(s.ResultList)
 	s.App.Draw()
+	return false
+}
+
+func (s *Search) HandleCommand(command string) {
+	command = command[1:]
+	terms := strings.Split(command, " ")
+	verb := terms[0]
+	log.Debugf("command terms %s", terms)
+
+	switch verb {
+	case "new":
+		doctype := terms[1]
+		if !s.App.PagesHandler.HasPage("New") {
+			newPage := NewNewPage(doctype)
+			s.App.PagesHandler.AddPage(s.App, newPage)
+			s.App.PagesHandler.GotoPageByTitle("New")
+			s.App.SetFocus(newPage.Form)
+			defer s.App.Draw()
+		}
+	}
 }
 
 func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {

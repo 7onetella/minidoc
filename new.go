@@ -13,15 +13,33 @@ type New struct {
 	BucketHandler *BucketHandler
 }
 
-func NewNew() *New {
-	//n := &New{
-	//	Layout: tview.NewFlex(),
-	//}
-	//
-	////minidoc := &BaseDoc{}
-	//n.Form := nil //NewEdit(minidoc, nil, nil, nil, n.CreateAction).Form
-	//n.Form.SetBorder(false)
-	return nil
+func NewNewPage(doctype string) *New {
+	n := &New{
+		Layout: tview.NewFlex(),
+	}
+
+	var json interface{}
+	var doc MiniDoc
+	switch doctype {
+	case "url":
+		doc = &URLDoc{}
+		doc.SetType("url")
+		json = Jsonize(doc)
+	case "note":
+		doc := &NoteDoc{}
+		doc.SetType("note")
+		json = Jsonize(doc)
+	case "todo":
+		doc := &ToDoDoc{}
+		doc.SetType("todo")
+		json = Jsonize(doc)
+	}
+
+	n.Form = NewEditorForm(json)
+	n.Form.SetBorder(false)
+	n.Form.AddButton("Cancel", n.CancelAction)
+
+	return n
 }
 
 func (n *New) SetApp(app *SimpleApp) {
@@ -29,49 +47,15 @@ func (n *New) SetApp(app *SimpleApp) {
 	n.debug = app.DebugView.Debug
 }
 
-// SearchPage returns search page
 func (n *New) Page() (title string, content tview.Primitive) {
-
-	//rows := tview.NewFlex().SetDirection(tview.FlexRow).
-	//	AddItem(n.Form, 0, 1, true)
 
 	n.Layout.AddItem(n.Form, 0, 1, true)
 	n.Layout.SetBorder(true).SetBorderPadding(0, 1, 1, 1)
 
 	return "New", n.Layout
-
 }
 
 func (n *New) CreateAction() {
-	f := n.Form
-	title := GetInputValue(f, "Title:")
-	description := GetInputValue(f, "Description:")
-	tags := GetInputValue(f, "Tags:")
-
-	input := &BaseDoc{
-		Title:       title,
-		Type:        "url",
-		Description: description,
-		Tags:        tags,
-	}
-
-	err := n.UpdateMinidoc(input)
-	if err != nil {
-		n.debug("error while updating: " + err.Error())
-	}
-
-	n.Reset()
-	n.App.PagesHandler.GotoPageByTitle("Search")
-}
-
-func (n *New) UpdateMinidoc(minidoc *BaseDoc) error {
-	key, err := n.App.BucketHandler.Write(minidoc)
-	if err != nil {
-		return err
-	}
-	minidoc.ID = key
-	err = n.App.IndexHandler.Index(minidoc)
-	return err
 }
 
 func (n *New) Reset() {
@@ -90,5 +74,10 @@ func (n *New) Reset() {
 
 	n.Form = f
 	n.Layout.AddItem(n.Form, 0, 1, true)
+}
 
+func (n *New) CancelAction() {
+	n.App.PagesHandler.RemoveLastPage(n.App)
+	n.App.PagesHandler.GotoPageByTitle("Search")
+	n.App.Draw()
 }

@@ -20,6 +20,20 @@ func NewEdit(s *Search, json interface{}) *Edit {
 		json:   json,
 	}
 
+	f := NewEditorForm(json)
+
+	f.AddButton("Update", edit.UpdateAction)
+	f.AddButton("Delete", edit.DeleteAction)
+	f.AddButton("Cancel", edit.CancelAction)
+	f.SetBorderPadding(1, 1, 2, 2)
+	f.SetBorder(true)
+
+	edit.Form = f
+
+	return edit
+}
+
+func NewEditorForm(json interface{}) *tview.Form {
 	f := tview.NewForm()
 	doc, err := MiniDocFrom(json)
 	if err != nil {
@@ -28,13 +42,6 @@ func NewEdit(s *Search, json interface{}) *Edit {
 
 	jh := NewJSONHandler(json)
 	f.SetTitle(jh.string("type") + ":" + jh.string("id"))
-
-	//fields := jh.fields()
-	//keys := make([]string, 0, len(fields))
-	//for key := range fields {
-	//	keys = append(keys, key)
-	//}
-	//sort.Strings(keys)
 
 	for _, fieldName := range doc.GetDisplayFields() {
 		if fieldName == "type" || fieldName == "id" || fieldName == "created_date" {
@@ -51,16 +58,7 @@ func NewEdit(s *Search, json interface{}) *Edit {
 			f.AddCheckbox(fieldNameCleaned+":", jh.bool(fieldName), nil)
 		}
 	}
-
-	f.AddButton("Update", edit.UpdateAction)
-	f.AddButton("Delete", edit.DeleteAction)
-	f.AddButton("Cancel", edit.CancelAction)
-	f.SetBorderPadding(1, 1, 2, 2)
-	f.SetBorder(true)
-
-	edit.Form = f
-
-	return edit
+	return f
 }
 
 func (e *Edit) Update(doc MiniDoc) error {

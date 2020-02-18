@@ -9,6 +9,7 @@ type MiniDoc interface {
 	SetID(uint32)
 	GetIDString() string
 	GetType() string
+	SetType(string)
 	GetTitle() string
 	GetDescription() string
 	GetTags() string

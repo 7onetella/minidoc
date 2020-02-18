@@ -113,10 +113,15 @@ func (j *JSONHandler) fieldtype(property string) string {
 
 func Jsonize(d interface{}) interface{} {
 	jsonBytes, err := json.Marshal(d)
+	if err != nil {
+		log.Errorf("marshaling to bytes %s d=%v", d)
+		return nil
+	}
 
 	var jsonDoc interface{}
 	err = json.Unmarshal(jsonBytes, &jsonDoc)
 	if err != nil {
+		log.Errorf("unmarshaling: %v", err)
 		return nil
 	}
 	return jsonDoc
