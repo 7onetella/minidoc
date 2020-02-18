@@ -131,38 +131,42 @@ func ExtractFieldValues(jh *JSONHandler, f *tview.Form) {
 }
 
 func (e *Edit) DeleteAction() {
-	app := e.Search.App
+	ConfirmDeleteModal(e.Search, e.json, e.Delete)
+}
+
+func ConfirmDeleteModal(s *Search, json interface{}, deleteFunc func(doc MiniDoc) error) {
+	app := s.App
 
 	modal := tview.NewModal().
 		SetText("Do you really want to delete?").
 		AddButtons([]string{"Yes", "No"}).
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == "Yes" {
-				doc, err := MiniDocFrom(e.json)
+				doc, err := MiniDocFrom(json)
 				if err != nil {
-					log.Errorf("minidoc from %v failed: %v", e.json, err)
+					log.Errorf("minidoc from %v failed: %v", json, err)
 					return
 				}
 				log.Debugf("deleting %v", doc)
-				err = e.Delete(doc)
+				err = deleteFunc(doc)
 				if err != nil {
 					log.Errorf("deleting %v failed: %v", doc, err)
 					return
 				}
-				e.Search.ResultList.RemoveRow(e.Search.CurrentRowIndex)
+				s.ResultList.RemoveRow(s.CurrentRowIndex)
 				// if at the end move up
-				if e.Search.CurrentRowIndex == e.Search.ResultList.GetRowCount() {
-					e.Search.SetNextRowIndex(UP)
+				if s.CurrentRowIndex == s.ResultList.GetRowCount() {
+					s.SetNextRowIndex(UP)
 				}
 				// if at the beginning move down
-				if e.Search.CurrentRowIndex == 0 {
-					e.Search.SetNextRowIndex(DOWN)
+				if s.CurrentRowIndex == 0 {
+					s.SetNextRowIndex(DOWN)
 				}
 			}
 
-			e.Search.GoToSearchResult()
-			e.Search.ResultList.Select(e.Search.CurrentRowIndex, 0)
-			e.Search.LoadPreview(DIRECTION_NONE)
+			s.GoToSearchResult()
+			s.ResultList.Select(s.CurrentRowIndex, 0)
+			s.LoadPreview(DIRECTION_NONE)
 			app.Draw()
 			if err := app.SetRoot(app.Layout, true).Run(); err != nil {
 				panic(err)

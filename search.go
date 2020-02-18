@@ -226,6 +226,8 @@ func (s *Search) GetInputCaptureFunc() func(event *tcell.EventKey) *tcell.EventK
 				s.LoadPreview(DOWN)
 			case 'k':
 				s.LoadPreview(UP)
+			case 'd':
+				s.DeleteRow()
 			}
 
 		case tcell.KeyTab:
@@ -352,6 +354,27 @@ func (s *Search) LoadEdit() {
 		s.App.SetFocus(s.EditForm)
 	}
 	s.App.Draw()
+}
+
+func (s *Search) DeleteRow() {
+	s.SetNextRowIndex(DIRECTION_NONE)
+	log.Debugf("current row %d", s.CurrentRowIndex)
+	json, err := s.GetJsonFromCurrentRow()
+	if err != nil {
+		log.Errorf("minidoc from %v failed: %v", json, err)
+		return
+	}
+
+	ConfirmDeleteModal(s, json, s.DeleteFunc)
+}
+
+func (s *Search) DeleteFunc(doc MiniDoc) error {
+	err := s.App.BucketHandler.Delete(doc)
+	if err != nil {
+		return err
+	}
+	err = s.App.IndexHandler.Delete(doc)
+	return err
 }
 
 func (s *Search) GetJsonFromCurrentRow() (interface{}, error) {
