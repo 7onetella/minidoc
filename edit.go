@@ -98,34 +98,34 @@ func (e *Edit) UpdateAction() {
 		return
 	}
 
-	e.Search.UpdateSearchResultRow(e.Search.CurrentRowIndex, doc)
-
 	e.Search.UnLoadEdit()
 }
 
 func ExtractFieldValues(jh *JSONHandler, f *tview.Form) {
 	for fieldName, _ := range jh.fields() {
-		if fieldName != "id" && fieldName != "type" {
-			fieldtype := jh.fieldtype(fieldName)
-			var v string
-			switch fieldtype {
-			case "string":
-				fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
-				sv := GetInputValue(f, fieldNameCleaned+":")
-				jh.set(fieldName, sv)
-			case "float64":
-				fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
-				v = GetInputValue(f, fieldNameCleaned+":")
-				fv, _ := strconv.ParseFloat(v, 64)
-				jh.set(fieldName, fv)
-			case "bool":
-				fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
-				bv := GetCheckBoxChecked(f, fieldNameCleaned+":")
-				jh.set(fieldName, bv)
-			}
-			if !jh.ok() {
-				log.Errorf("setting %s: %v", fieldName, jh.err.Error())
-			}
+		if fieldName == "type" || fieldName == "id" || fieldName == "created_date" || fieldName == "fragments" {
+			continue
+		}
+
+		fieldtype := jh.fieldtype(fieldName)
+		var v string
+		switch fieldtype {
+		case "string":
+			fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
+			sv := GetInputValue(f, fieldNameCleaned+":")
+			jh.set(fieldName, sv)
+		case "float64":
+			fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
+			v = GetInputValue(f, fieldNameCleaned+":")
+			fv, _ := strconv.ParseFloat(v, 64)
+			jh.set(fieldName, fv)
+		case "bool":
+			fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
+			bv := GetCheckBoxChecked(f, fieldNameCleaned+":")
+			jh.set(fieldName, bv)
+		}
+		if !jh.ok() {
+			log.Errorf("setting %s: %v", fieldName, jh.err.Error())
 		}
 	}
 }
@@ -153,6 +153,7 @@ func ConfirmDeleteModal(s *Search, json interface{}, deleteFunc func(doc MiniDoc
 					log.Errorf("deleting %v failed: %v", doc, err)
 					return
 				}
+				log.Debugf("removing row %v", s.CurrentRowIndex)
 				s.ResultList.RemoveRow(s.CurrentRowIndex)
 				// if at the end move up
 				if s.CurrentRowIndex == s.ResultList.GetRowCount() {
@@ -160,17 +161,20 @@ func ConfirmDeleteModal(s *Search, json interface{}, deleteFunc func(doc MiniDoc
 				}
 				// if at the beginning move down
 				if s.CurrentRowIndex == 0 {
-					s.SetNextRowIndex(DOWN)
+					s.SetNextRowIndex(DIRECTION_NONE)
 				}
 			}
 
-			s.GoToSearchResult()
+			// calling this will trigger update of current row index again
+			// s.GoToSearchResult()
+			s.App.SetFocus(s.ResultList)
 			s.ResultList.Select(s.CurrentRowIndex, 0)
-			s.LoadPreview(DIRECTION_NONE)
-			app.Draw()
+			s.App.Draw()
+
 			if err := app.SetRoot(app.Layout, true).Run(); err != nil {
 				panic(err)
 			}
+			log.Debugf("delete modal after restoring the view")
 		})
 
 	if err := app.SetRoot(modal, false).Run(); err != nil {

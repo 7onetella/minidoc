@@ -26,7 +26,7 @@ type BaseDoc struct {
 	Title           string `json:"title"`
 	Description     string `json:"description"`
 	Tags            string `json:"tags"`
-	SearchFragments string `json:"-"`
+	SearchFragments string `json:"fragments"`
 }
 
 func (m *BaseDoc) GetID() uint32 {

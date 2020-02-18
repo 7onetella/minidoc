@@ -59,7 +59,7 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 
 	rows := tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(s.SearchBar, 2, 1, true).
-		AddItem(s.Columns, 0, 10, true)
+		AddItem(s.Columns, 0, 10, false)
 
 	s.Layout.AddItem(rows, 0, 1, true)
 	s.Layout.SetBorder(true).SetBorderPadding(1, 1, 2, 2)
@@ -77,15 +77,6 @@ func (s *Search) ResetSearchBar() {
 	if ok {
 		input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 
-			//if event.Key() == tcell.KeyCtrlN {
-			//	if !s.App.PagesHandler.HasPage("New") {
-			//		s.App.PagesHandler.AddPage(s.App, NewNewPage("note"))
-			//		s.App.PagesHandler.GotoPageByTitle("New")
-			//		defer s.App.Draw()
-			//	}
-			//	return nil
-			//}
-			//
 			if event.Key() == tcell.KeyEnter {
 				done := s.ShowSearchResult(input.GetText())
 				if done {
@@ -144,7 +135,7 @@ func (s *Search) ShowSearchResult(searchby string) bool {
 	s.ResultList.SetSelectedStyle(tcell.ColorGray, tcell.ColorWhite, tcell.AttrNone)
 	s.Detail.Clear()
 
-	s.ResultList.SetInputCapture(s.GetInputCaptureFunc())
+	s.ResultList.SetInputCapture(s.GetResultListInputCaptureFunc())
 
 	s.App.SetFocus(s.ResultList)
 	s.App.Draw()
@@ -212,7 +203,7 @@ func NewCell(reference interface{}, text string, color tcell.Color) *tview.Table
 	}
 }
 
-func (s *Search) GetInputCaptureFunc() func(event *tcell.EventKey) *tcell.EventKey {
+func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		//debug("EventKey: " + event.Name())
 
@@ -251,7 +242,7 @@ const (
 
 func (s *Search) SetNextRowIndex(direction int) {
 	rowIndex, _ := s.ResultList.GetSelection()
-	log.Debugf("s.ResultList.GetSelection() before: %d", rowIndex)
+	log.Debugf("SetNextRowIndex row index before: %d", rowIndex)
 	switch direction {
 	case DOWN:
 		if rowIndex < (s.ResultList.GetRowCount() - 1) {
@@ -262,7 +253,7 @@ func (s *Search) SetNextRowIndex(direction int) {
 			rowIndex -= 1
 		}
 	}
-	log.Debugf("s.ResultList.GetSelection(): after %d", rowIndex)
+	log.Debugf("SetNextRowIndex row index: after %d", rowIndex)
 	s.CurrentRowIndex = rowIndex
 }
 
@@ -313,13 +304,6 @@ func (s *Search) LoadPreview(direction int) {
 	content := ""
 	s.Detail.SetTitle(jh.string("type") + ":" + jh.string("id"))
 
-	//fields := jh.fields()
-	//keys := make([]string, 0, len(fields))
-	//for key := range fields {
-	//	keys = append(keys, key)
-	//}
-	//sort.Strings(keys)
-
 	for _, fieldName := range doc.GetDisplayFields() {
 		if fieldName == "type" || fieldName == "id" {
 			continue
@@ -357,7 +341,6 @@ func (s *Search) LoadEdit() {
 }
 
 func (s *Search) DeleteRow() {
-	s.SetNextRowIndex(DIRECTION_NONE)
 	log.Debugf("current row %d", s.CurrentRowIndex)
 	json, err := s.GetJsonFromCurrentRow()
 	if err != nil {
