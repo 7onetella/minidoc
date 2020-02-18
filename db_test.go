@@ -21,7 +21,7 @@ func TestBucketHandler_Write(t *testing.T) {
 }
 
 func TestBucketHandler_Read(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 0; i++ {
 		db := NewBucketHandler()
 		doc := GetTestUrlMiniDoc()
 		ID, err := db.Write(doc)

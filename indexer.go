@@ -145,7 +145,7 @@ func (ih *IndexHandler) Search(queryString string) []MiniDoc {
 				fragment = strings.ReplaceAll(fragment, "[0m", "[white]")
 				rv += fmt.Sprintf("%s", fragment)
 			}
-			minidoc.SearchFragments = rv
+			minidoc.Fragments = rv
 		}
 
 		docs[ri] = minidoc

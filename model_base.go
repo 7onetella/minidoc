@@ -14,19 +14,24 @@ type MiniDoc interface {
 	GetDescription() string
 	GetTags() string
 	GetSearchFragments() string
+	SetSearchFragments(string)
 	GetJSON() interface{}
 	SetCreatedDate(string)
 	GetDisplayFields() []string
+	IsSelected() bool
+	SetIsSelected(bool)
+	IsSelectedString() string
 }
 
 type BaseDoc struct {
-	CreatedDate     string `json:"created_date"`
-	ID              uint32 `json:"id"`
-	Type            string `json:"type"`
-	Title           string `json:"title"`
-	Description     string `json:"description"`
-	Tags            string `json:"tags"`
-	SearchFragments string `json:"fragments"`
+	CreatedDate string `json:"created_date"`
+	ID          uint32 `json:"id"`
+	Type        string `json:"type"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Tags        string `json:"tags"`
+	Fragments   string `json:"fragments"`
+	Selected    bool   `json:"selected"`
 }
 
 func (m *BaseDoc) GetID() uint32 {
@@ -62,7 +67,11 @@ func (m *BaseDoc) GetTags() string {
 }
 
 func (m *BaseDoc) GetSearchFragments() string {
-	return m.SearchFragments
+	return m.Fragments
+}
+
+func (m *BaseDoc) SetSearchFragments(fragments string) {
+	m.Fragments = fragments
 }
 
 func (m *BaseDoc) GetJSON() interface{} {
@@ -71,6 +80,21 @@ func (m *BaseDoc) GetJSON() interface{} {
 
 func (m *BaseDoc) SetCreatedDate(createdDate string) {
 	m.CreatedDate = createdDate
+}
+
+func (m *BaseDoc) IsSelected() bool {
+	return m.Selected
+}
+
+func (m *BaseDoc) SetIsSelected(selected bool) {
+	m.Selected = selected
+}
+
+func (m *BaseDoc) IsSelectedString() string {
+	if m.Selected {
+		return "x"
+	}
+	return " "
 }
 
 func (m *BaseDoc) GetDisplayFields() []string {

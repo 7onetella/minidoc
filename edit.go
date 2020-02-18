@@ -134,6 +134,24 @@ func (e *Edit) DeleteAction() {
 	ConfirmDeleteModal(e.Search, e.json, e.Delete)
 }
 
+func ConfirmationModal(app *SimpleApp, message string, action func()) {
+	modal := tview.NewModal().
+		SetText(message).
+		AddButtons([]string{"Yes", "No"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			if buttonLabel == "Yes" {
+				action()
+			}
+			if err := app.SetRoot(app.Layout, true).Run(); err != nil {
+				panic(err)
+			}
+		})
+
+	if err := app.SetRoot(modal, false).Run(); err != nil {
+		panic(err)
+	}
+}
+
 func ConfirmDeleteModal(s *Search, json interface{}, deleteFunc func(doc MiniDoc) error) {
 	app := s.App
 

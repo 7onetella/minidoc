@@ -82,6 +82,7 @@ func (s *Search) ResetSearchBar() {
 				if done {
 					return nil
 				}
+				s.CurrentRowIndex = 0
 				s.App.SetFocus(s.SearchBar)
 				defer s.App.Draw()
 				return nil
@@ -100,6 +101,8 @@ func (s *Search) ResetSearchBar() {
 
 const idColumnIndex = 1
 const typeColumnIndex = 0
+const fragmentsColumnIndex = 3
+const selectedColumnIndex = 2
 
 func (s *Search) ShowSearchResult(searchby string) bool {
 	searchTerms := ""
@@ -120,8 +123,13 @@ func (s *Search) ShowSearchResult(searchby string) bool {
 	}
 
 	s.ResultList.Clear()
+	// doc type
 	s.ResultList.InsertColumn(0)
+	// id
 	s.ResultList.InsertColumn(0)
+	// matched
+	s.ResultList.InsertColumn(0)
+	// selected
 	s.ResultList.InsertColumn(0)
 
 	// Display search result
@@ -162,25 +170,20 @@ func (s *Search) HandleCommand(command string) {
 }
 
 func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {
-	i := 0
 	log.Debugf("updating row: id=%d row_index=%d minidoc=%v", doc.GetID(), rowIndex, doc)
-
 	doctype := doc.GetType()
 	doctype = strings.TrimSpace(doctype)
+	i := 0
 	s.ResultList.SetCell(rowIndex, i, NewCellWithBG(doctype, doc.GetIDString(), tcell.ColorWhite, tcell.ColorGray))
 	i++
 	s.ResultList.SetCell(rowIndex, i, NewCell(doc.GetID(), "", tcell.ColorWhite))
 	i++
-	//s.ResultList.SetCell(rowIndex, i, NewCell(doc.GetTitle(), doc.GetTitle(), tcell.ColorDarkCyan))
-	//i++
-	matched := ""
-	// if the result is only matched on doc type, don't show type shown in fragment
-	// don't make sense showing type and type as fragments
-	if doc.GetType() != doc.GetSearchFragments() {
-		matched = doc.GetSearchFragments() + "                                                         "
-	}
+	s.ResultList.SetCell(rowIndex, i, NewCell(doc.IsSelected(), doc.IsSelectedString(), tcell.ColorWhite))
+	i++
+	// pad empty space to keep the result row width wider than few character wide
+	log.Debugf("search fragments from doc %s", doc.GetSearchFragments())
+	matched := doc.GetSearchFragments() + "                                   "
 	s.ResultList.SetCell(rowIndex, i, NewCell(matched, matched, tcell.ColorWhite))
-	//s.ResultList.SetCellSimple(rowIndex, i, matched)
 }
 
 func NewCellWithBG(reference interface{}, text string, color, bg tcell.Color) *tview.TableCell {
@@ -205,7 +208,7 @@ func NewCell(reference interface{}, text string, color tcell.Color) *tview.Table
 
 func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
-		//debug("EventKey: " + event.Name())
+		//log.Debug("EventKey: " + event.Name())
 
 		switch event.Key() {
 		case tcell.KeyRune:
@@ -218,7 +221,10 @@ func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tc
 			case 'k':
 				s.LoadPreview(UP)
 			case 'd':
-				s.DeleteRow()
+				s.DeleteSelectedRows()
+			case ' ':
+				log.Debug("spacebar pressed")
+				s.SelectRecordForCurrentRow()
 			}
 
 		case tcell.KeyTab:
@@ -260,12 +266,7 @@ func (s *Search) SetNextRowIndex(direction int) {
 func (s *Search) GoToSearchResult() {
 	s.App.SetFocus(s.ResultList)
 	s.ResultList.SetSelectable(true, false)
-	//if s.ResultList.GetRowCount() > 0 && !s.IsResetted {
-	//	// down one because of header row
-	//	s.LoadPreview(DOWN)
-	//} else {
 	s.LoadPreview(DIRECTION_NONE)
-	//}
 	s.App.Draw()
 }
 
@@ -287,7 +288,7 @@ func (s *Search) LoadPreview(direction int) {
 
 	s.SetNextRowIndex(direction)
 	log.Debugf("current row %d", s.CurrentRowIndex)
-	json, err := s.GetJsonFromCurrentRow()
+	json, err := s.GetJsonFromRow(s.CurrentRowIndex)
 	if err != nil {
 		log.Errorf("minidoc from %v failed: %v", json, err)
 		return
@@ -323,7 +324,7 @@ func (s *Search) LoadPreview(direction int) {
 func (s *Search) LoadEdit() {
 	s.ResultList.SetSelectable(false, false)
 
-	json, err := s.GetJsonFromCurrentRow()
+	json, err := s.GetJsonFromRow(s.CurrentRowIndex)
 	if err != nil {
 		log.Debugf("error getting json from curr row: %v", err)
 		return
@@ -340,15 +341,62 @@ func (s *Search) LoadEdit() {
 	s.App.Draw()
 }
 
-func (s *Search) DeleteRow() {
+func (s *Search) DeleteSelectedRows() {
+	ConfirmationModal(s.App, "Batch delete selected rows?", s.BatchDelete)
+}
+
+func (s *Search) BatchDelete() {
+	for i := 0; i < s.ResultList.GetRowCount(); i++ {
+		log.Debugf("current row %d", s.CurrentRowIndex)
+		json, err := s.GetJsonFromRow(i)
+		if err != nil {
+			log.Errorf("minidoc from %v failed: %v", json, err)
+			return
+		}
+
+		doc, err := MiniDocFrom(json)
+		if err != nil {
+			log.Errorf("minidoc from %v failed: %v", json, err)
+			return
+		}
+
+		if !doc.IsSelected() {
+			log.Debugf("row %d not selected skipping", i)
+			continue
+		}
+
+		log.Debugf("deleting %v", doc)
+		s.DeleteFunc(doc)
+		if err != nil {
+			log.Errorf("deleting %v failed: %v", doc, err)
+			return
+		}
+		//log.Debugf("removing row %v", i)
+		//s.ResultList.RemoveRow(i)
+	}
+}
+
+func (s *Search) SelectRecordForCurrentRow() {
 	log.Debugf("current row %d", s.CurrentRowIndex)
-	json, err := s.GetJsonFromCurrentRow()
+	json, err := s.GetJsonFromRow(s.CurrentRowIndex)
 	if err != nil {
 		log.Errorf("minidoc from %v failed: %v", json, err)
 		return
 	}
 
-	ConfirmDeleteModal(s, json, s.DeleteFunc)
+	doc, err := MiniDocFrom(json)
+	if err != nil {
+		log.Errorf("minidoc from %v failed: %v", json, err)
+		return
+	}
+
+	if doc.IsSelected() {
+		doc.SetIsSelected(false)
+	} else {
+		doc.SetIsSelected(true)
+	}
+
+	s.UpdateSearchResultRow(s.CurrentRowIndex, doc)
 }
 
 func (s *Search) DeleteFunc(doc MiniDoc) error {
@@ -360,8 +408,7 @@ func (s *Search) DeleteFunc(doc MiniDoc) error {
 	return err
 }
 
-func (s *Search) GetJsonFromCurrentRow() (interface{}, error) {
-	rowIndex := s.CurrentRowIndex
+func (s *Search) GetJsonFromRow(rowIndex int) (interface{}, error) {
 	ref := s.ResultList.GetCell(rowIndex, idColumnIndex).GetReference()
 	id, ok := ref.(uint32)
 	if !ok {
@@ -376,14 +423,55 @@ func (s *Search) GetJsonFromCurrentRow() (interface{}, error) {
 		log.Errorf(msg)
 		return nil, fmt.Errorf(msg)
 	}
+	ref = s.ResultList.GetCell(rowIndex, fragmentsColumnIndex).GetReference()
+	fragments, ok := ref.(string)
+	if !ok {
+		msg := fmt.Sprintf("ref for row index[%d] type column not string but is %v", rowIndex, reflect.TypeOf(ref))
+		log.Errorf(msg)
+		return nil, fmt.Errorf(msg)
+	}
+	log.Debugf("read fragments from current row %s", fragments)
+	ref = s.ResultList.GetCell(rowIndex, selectedColumnIndex).GetReference()
+	isSelected, ok := ref.(bool)
+	if !ok {
+		msg := fmt.Sprintf("ref for row index[%d] type column not bool but is %v", rowIndex, reflect.TypeOf(ref))
+		log.Errorf(msg)
+		return nil, fmt.Errorf(msg)
+	}
 
-	doc, err := s.App.BucketHandler.Read(id, doctype)
+	json, err := s.App.BucketHandler.Read(id, doctype)
 	if err != nil {
 		log.Debugf("read error: %v", err)
 		return nil, err
 	}
-	return doc, nil
+
+	// json unmarshaller will exclude empty value fields
+	// jh.set("fragments", fragments) will throw error
+	// convert to minidoc to set these two values
+	doc, _ := MiniDocFrom(json)
+	doc.SetIsSelected(isSelected)
+	doc.SetSearchFragments(fragments)
+	json = Jsonize(doc)
+	log.Debugf("json")
+	return json, nil
 }
+
+//type RefHandler struct{
+//	err error
+//}
+//
+//func NewRefHandler() *RefHandler {
+//	return &RefHandler{}
+//}
+//
+//func (rh *RefHandler) uint32(ref interface{}) uint32 {
+//	v, ok := ref.(uint32)
+//	if !ok {
+//		rh.err = fmt.Errorf(fmt.Sprintf("uint32 is expected but got %v", reflect.TypeOf(ref)))
+//		log.Errorf()
+//	}
+//	return v
+//}
 
 func (s *Search) UnLoadEdit() {
 	s.GoToSearchResult()

@@ -86,12 +86,14 @@ func (j *JSONHandler) set(property string, v interface{}) {
 	m := j.fields()
 	if !j.ok() {
 		j.err = fmt.Errorf("error getting fields")
+		log.Errorf("json handler: %v", j.err)
 	}
 
 	if j.ok() {
 		_, found := m[property]
 		if !found {
 			j.err = fmt.Errorf("property not found: " + property)
+			log.Errorf("json handler: %v", j.err)
 			return
 		}
 		m[property] = v
@@ -114,7 +116,7 @@ func (j *JSONHandler) fieldtype(property string) string {
 func Jsonize(d interface{}) interface{} {
 	jsonBytes, err := json.Marshal(d)
 	if err != nil {
-		log.Errorf("marshaling to bytes %s d=%v", d)
+		log.Errorf("marshaling to bytes d=%v", d)
 		return nil
 	}
 
