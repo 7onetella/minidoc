@@ -8,6 +8,7 @@ type New struct {
 	App           *SimpleApp
 	Layout        *tview.Flex
 	Form          *tview.Form
+	json          interface{}
 	debug         func(string)
 	IndexHandler  *IndexHandler
 	BucketHandler *BucketHandler
@@ -37,7 +38,9 @@ func NewNewPage(doctype string) *New {
 
 	n.Form = NewEditorForm(json)
 	n.Form.SetBorder(false)
+	n.Form.AddButton("Create", n.CreateAction)
 	n.Form.AddButton("Cancel", n.CancelAction)
+	n.json = json
 
 	return n
 }
@@ -56,6 +59,36 @@ func (n *New) Page() (title string, content tview.Primitive) {
 }
 
 func (n *New) CreateAction() {
+	f := n.Form
+	jh := NewJSONHandler(n.json)
+
+	ExtractFieldValues(jh, f)
+
+	doc, err := MiniDocFrom(n.json)
+	if err != nil {
+		log.Errorf("MiniDocFrom failed: %v", err)
+		return
+	}
+	log.Debugf("minidoc from json: %v", n.json)
+
+	err = n.Save(doc)
+	if err != nil {
+		log.Errorf("updating %v failed: %v", doc, err)
+		return
+	}
+
+	n.App.PagesHandler.RemoveLastPage(n.App)
+	n.App.PagesHandler.GotoPageByTitle("Search")
+	n.App.Draw()
+}
+
+func (n *New) Save(doc MiniDoc) error {
+	_, err := n.App.BucketHandler.Write(doc)
+	if err != nil {
+		return err
+	}
+	err = n.App.IndexHandler.Index(doc)
+	return err
 }
 
 func (n *New) Reset() {

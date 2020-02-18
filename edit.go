@@ -83,33 +83,7 @@ func (e *Edit) UpdateAction() {
 	f := e.Form
 	jh := NewJSONHandler(e.json)
 
-	for fieldName, _ := range jh.fields() {
-		if fieldName != "id" && fieldName != "type" {
-			fieldtype := jh.fieldtype(fieldName)
-			var v string
-			switch fieldtype {
-			case "string":
-				fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
-				sv := GetInputValue(f, fieldNameCleaned+":")
-				//e.debug(fmt.Sprintf("updating %s with %v", fieldName, v))
-				jh.set(fieldName, sv)
-			case "float64":
-				fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
-				v = GetInputValue(f, fieldNameCleaned+":")
-				//e.debug(fmt.Sprintf("updating %s with %v", fieldName, v))
-				fv, _ := strconv.ParseFloat(v, 64)
-				jh.set(fieldName, fv)
-			case "bool":
-				fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
-				bv := GetCheckBoxChecked(f, fieldNameCleaned+":")
-				//e.debug(fmt.Sprintf("updating %s with %v", fieldName, v))
-				jh.set(fieldName, bv)
-			}
-			if !jh.ok() {
-				log.Errorf("setting %s: %v", fieldName, jh.err.Error())
-			}
-		}
-	}
+	ExtractFieldValues(jh, f)
 
 	doc, err := MiniDocFrom(e.json)
 	if err != nil {
@@ -127,6 +101,33 @@ func (e *Edit) UpdateAction() {
 	e.Search.UpdateSearchResultRow(e.Search.CurrentRowIndex, doc)
 
 	e.Search.UnLoadEdit()
+}
+
+func ExtractFieldValues(jh *JSONHandler, f *tview.Form) {
+	for fieldName, _ := range jh.fields() {
+		if fieldName != "id" && fieldName != "type" {
+			fieldtype := jh.fieldtype(fieldName)
+			var v string
+			switch fieldtype {
+			case "string":
+				fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
+				sv := GetInputValue(f, fieldNameCleaned+":")
+				jh.set(fieldName, sv)
+			case "float64":
+				fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
+				v = GetInputValue(f, fieldNameCleaned+":")
+				fv, _ := strconv.ParseFloat(v, 64)
+				jh.set(fieldName, fv)
+			case "bool":
+				fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
+				bv := GetCheckBoxChecked(f, fieldNameCleaned+":")
+				jh.set(fieldName, bv)
+			}
+			if !jh.ok() {
+				log.Errorf("setting %s: %v", fieldName, jh.err.Error())
+			}
+		}
+	}
 }
 
 func (e *Edit) DeleteAction() {
