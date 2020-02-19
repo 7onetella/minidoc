@@ -2,6 +2,7 @@ package minidoc
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
@@ -164,7 +165,7 @@ func (s *Search) HandleCommand(command string) {
 	case "new":
 		doctype := terms[1]
 		if !s.App.PagesHandler.HasPage("New") {
-			newPage := NewNewPage(doctype)
+			newPage := NewNewPage(doctype, s.App)
 			s.App.PagesHandler.AddPage(s.App, newPage)
 			s.App.PagesHandler.GotoPageByTitle("New")
 			s.App.SetFocus(newPage.Form)
@@ -189,29 +190,44 @@ func (s *Search) HandleCommand(command string) {
 
 				markdown += doc.GetMarkdown() + "\n\n"
 			}
-			file, err := os.Create("/tmp/markdown.md")
-			if err != nil {
-				log.Errorf("creating markdown: %v", err)
-				s.App.StatusBar.SetText("[red]error while creating markdown[white]")
+			if WriteToFile("/tmp/markdown.md", markdown) {
 				return
 			}
-			_, err = fmt.Fprintf(file, markdown)
-			if err != nil {
-				log.Errorf("writing to markdown: %v", err)
-				s.App.StatusBar.SetText("[red]error while creating markdown[white]")
-				return
-			}
-			file.Close()
 			s.App.StatusBar.SetText("[green]opening markdown[white]")
 
-			s.openVimExec("/tmp/markdown.md")
+			OpenVim(s.App, "/tmp/markdown.md")
 		}
 	}
 }
 
+func WriteToFile(filepath, content string) (done bool) {
+	file, err := os.Create(filepath)
+	if err != nil {
+		log.Errorf("creating file: %v", err)
+		return true
+	}
+	_, err = fmt.Fprintf(file, content)
+	if err != nil {
+		log.Errorf("writing content: %v", err)
+		return true
+	}
+	file.Close()
+	return false
+}
+
+func ReadFromFile(filepath string) (string, error) {
+	dat, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		log.Errorf("reading content: %v", err)
+		return "", err
+	}
+
+	return string(dat), nil
+}
+
 // this works perfectly
-func (s *Search) openVimExec(filepath string) {
-	s.App.Suspend(func() {
+func OpenVim(app *SimpleApp, filepath string) {
+	app.Suspend(func() {
 		cmd := exec.Command("vim", filepath)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
@@ -331,6 +347,11 @@ func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tc
 				s.LoadPreview(UP)
 			case 'd':
 				s.DeleteSelectedRows()
+			case 'e':
+				key, done := s.EditCurrentFieldRowWithVi(event)
+				if done {
+					return key
+				}
 			case ' ':
 				log.Debug("spacebar pressed")
 				s.SelectRecordForCurrentRow()
@@ -351,6 +372,38 @@ func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tc
 
 		return event
 	}
+}
+
+func (s *Search) EditCurrentFieldRowWithVi(event *tcell.EventKey) (*tcell.EventKey, bool) {
+	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
+	if err != nil {
+		log.Debugf("error getting json from curr row: %v", err)
+		return event, true
+	}
+	json := Jsonize(doc)
+	jh := NewJSONHandler(json)
+
+	inputFile := "/tmp/.minidoc_input.tmp"
+	WriteToFile(inputFile, jh.string("description"))
+
+	OpenVim(s.App, inputFile)
+
+	content, err := ReadFromFile(inputFile)
+	log.Debugf("new content from input file: %s", content)
+	if err != nil {
+		log.Errorf("error reading: %v", err)
+	}
+	content = strings.TrimSpace(content)
+	jh.set("description", content)
+	log.Debugf("doc.description: %s", doc.GetDescription())
+	log.Debugf("json.description: %s", jh.string("description"))
+	doc, _ = MiniDocFrom(json)
+	err = s.App.DataHandler.Write(doc)
+	if err != nil {
+		log.Errorf("error writing: %v", err)
+	}
+	s.LoadPreview(DIRECTION_NONE)
+	return nil, false
 }
 
 const (
@@ -456,7 +509,16 @@ func (s *Search) LoadPreview(direction int) {
 		//s.debug("preview field for " + fieldNameCleaned)
 		v := jh.string(fieldName)
 		content += "\n"
-		content += fmt.Sprintf("  [white]%s:[white] [darkcyan]%s[white]\n", fieldNameCleaned, v)
+		content += fmt.Sprintf("  [white]%s:[white]", fieldNameCleaned)
+		lines := strings.Split(v, "\n")
+		if len(lines) > 1 {
+			content += "\n"
+			for _, line := range lines {
+				content += fmt.Sprintf("    [darkcyan]%s[darkcyan] \n", line)
+			}
+		} else {
+			content += fmt.Sprintf(" [darkcyan]%s[darkcyan] \n", v)
+		}
 	}
 
 	s.Detail.Clear()
@@ -466,13 +528,13 @@ func (s *Search) LoadPreview(direction int) {
 func (s *Search) LoadEdit() {
 	s.ResultList.SetSelectable(false, false)
 
-	json, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
+	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
 	if err != nil {
 		log.Debugf("error getting json from curr row: %v", err)
 		return
 	}
 
-	s.EditForm = NewEdit(s, json).Form
+	s.EditForm = NewEdit(s, doc).Form
 
 	if !s.IsEditMode {
 		s.Columns.RemoveItem(s.Detail)

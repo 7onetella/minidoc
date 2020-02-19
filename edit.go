@@ -23,6 +23,7 @@ func NewEdit(s *Search, doc MiniDoc) *Edit {
 	}
 
 	f := NewEditorForm(doc)
+
 	f.AddButton("Update", edit.UpdateAction)
 	f.AddButton("Delete", edit.DeleteAction)
 	f.AddButton("Cancel", edit.CancelAction)
@@ -49,11 +50,12 @@ func NewEditorForm(doc MiniDoc) *tview.Form {
 		fieldtype := jh.fieldtype(fieldName)
 		fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
 		//edit.debug("adding input field for " + fieldNameCleaned)
+		label := fieldNameCleaned + ":"
 		switch fieldtype {
 		case "string":
-			f.AddInputField(fieldNameCleaned+":", jh.string(fieldName), 60, nil, nil)
+			f.AddInputField(label, jh.string(fieldName), 0, nil, nil)
 		case "bool":
-			f.AddCheckbox(fieldNameCleaned+":", jh.bool(fieldName), nil)
+			f.AddCheckbox(label, jh.bool(fieldName), nil)
 		}
 	}
 	return f

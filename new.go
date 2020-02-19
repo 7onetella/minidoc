@@ -14,7 +14,7 @@ type New struct {
 	BucketHandler *BucketHandler
 }
 
-func NewNewPage(doctype string) *New {
+func NewNewPage(doctype string, app *SimpleApp) *New {
 	n := &New{
 		Layout: tview.NewFlex(),
 	}

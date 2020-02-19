@@ -25,6 +25,7 @@ type SimpleApp struct {
 	IndexHandler      *IndexHandler
 	BucketHandler     *BucketHandler
 	dataFolderPath    string
+	DataHandler       *DataHandler
 }
 
 type SimpleAppOption func(*SimpleApp)
@@ -87,6 +88,7 @@ func NewSimpleApp(opts ...SimpleAppOption) *SimpleApp {
 		nil,
 		nil,
 		".",
+		nil,
 	}
 
 	status.SetText("Ctrl-L for help")
@@ -109,6 +111,10 @@ func NewSimpleApp(opts ...SimpleAppOption) *SimpleApp {
 		WithIndexHandlerDebug(app.DebugView.Debug),
 		WithIndexHandlerIndexPath(app.dataFolderPath+"/index"),
 	)
+	app.DataHandler = &DataHandler{
+		app.BucketHandler,
+		app.IndexHandler,
+	}
 
 	Reindex(app.IndexHandler, app.BucketHandler)
 

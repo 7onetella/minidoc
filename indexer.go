@@ -31,6 +31,20 @@ var errorMessages = map[Error]string{
 	ErrorCSVDoesNotExist: "cannot open csv, path does not exist",
 }
 
+type DataHandler struct {
+	BucketHandler *BucketHandler
+	IndexHandler  *IndexHandler
+}
+
+func (dh *DataHandler) Write(doc MiniDoc) error {
+	_, err := dh.BucketHandler.Write(doc)
+	if err != nil {
+		return err
+	}
+	err = dh.IndexHandler.Index(doc)
+	return err
+}
+
 type IndexHandler struct {
 	debug     func(string)
 	index     bleve.Index
