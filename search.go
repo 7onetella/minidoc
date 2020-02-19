@@ -2,8 +2,11 @@ package minidoc
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"reflect"
 	"strings"
+	"syscall"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -82,7 +85,8 @@ func (s *Search) ResetSearchBar() {
 				if done {
 					return nil
 				}
-				s.CurrentRowIndex = 0
+				s.ResultList.ScrollToBeginning()
+				s.SelectRow(0)
 				s.App.SetFocus(s.SearchBar)
 				defer s.App.Draw()
 				return nil
@@ -166,7 +170,117 @@ func (s *Search) HandleCommand(command string) {
 			s.App.SetFocus(newPage.Form)
 			defer s.App.Draw()
 		}
+	case "generate":
+		outputDoctype := terms[1]
+		if outputDoctype == "markdown" {
+			markdown := ""
+			for i := 0; i < s.ResultList.GetRowCount(); i++ {
+				log.Debugf("current row %d", s.CurrentRowIndex)
+				json, err := s.GetJsonFromRow(i)
+				if err != nil {
+					log.Errorf("minidoc from %v failed: %v", json, err)
+					return
+				}
+
+				doc, err := MiniDocFrom(json)
+				if err != nil {
+					log.Errorf("minidoc from %v failed: %v", json, err)
+					return
+				}
+
+				if !doc.IsSelected() {
+					log.Debugf("row %d not selected skipping", i)
+					continue
+				}
+
+				markdown += doc.GetMarkdown() + "\n\n"
+			}
+			file, err := os.Create("/tmp/markdown.md")
+			if err != nil {
+				log.Errorf("creating markdown: %v", err)
+				s.App.StatusBar.SetText("[red]error while creating markdown[white]")
+				return
+			}
+			_, err = fmt.Fprintf(file, markdown)
+			if err != nil {
+				log.Errorf("writing to markdown: %v", err)
+				s.App.StatusBar.SetText("[red]error while creating markdown[white]")
+				return
+			}
+			file.Close()
+			s.App.StatusBar.SetText("[green]opening markdown[white]")
+
+			s.openVimExec("/tmp/markdown.md")
+		}
 	}
+}
+
+// this works perfectly
+func (s *Search) openVimExec(filepath string) {
+	s.App.Suspend(func() {
+		cmd := exec.Command("vim", filepath)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		err := cmd.Run()
+		if err != nil {
+			log.Errorf("opening vi: %v", err)
+		}
+		log.Debug("returning the control back")
+	})
+}
+
+// works create, all key inputs works, exit the minidoc since this seems to be replace the process
+func (s *Search) openVim(filepath string) {
+	binary, lookErr := exec.LookPath("vim")
+	if lookErr != nil {
+		panic(lookErr)
+	}
+
+	args := []string{"vim", filepath}
+
+	env := os.Environ()
+	execErr := syscall.Exec(binary, args, env)
+	if execErr != nil {
+		panic(execErr)
+	}
+	s.App.Draw()
+}
+
+func (s *Search) openVimForkExec(filepath string) {
+	cmd := "vim"
+	binary, lookErr := exec.LookPath(cmd)
+	if lookErr != nil {
+		panic(lookErr)
+	}
+	//fmt.Println(binary)
+
+	os.Remove("/tmp/stdin")
+	os.Remove("/tmp/stdout")
+	os.Remove("/tmp/stderr")
+
+	fstdin, err1 := os.Create("/tmp/stdin")
+	fstdout, err2 := os.Create("/tmp/stdout")
+	fstderr, err3 := os.Create("/tmp/stderr")
+	if err1 != nil || err2 != nil || err3 != nil {
+		log.Errorf("%v %v %v", err1, err2, err3)
+		panic("WOW")
+	}
+
+	env := os.Environ()
+
+	argv := []string{filepath}
+	procAttr := syscall.ProcAttr{
+		Dir:   "/tmp",
+		Files: []uintptr{fstdin.Fd(), fstdout.Fd(), fstderr.Fd()},
+		Env:   env,
+		Sys: &syscall.SysProcAttr{
+			Foreground: false,
+		},
+	}
+
+	pid, err := syscall.ForkExec(binary, argv, &procAttr)
+	log.Debugf("pid=%d err=%v", pid, err)
+	s.App.Draw()
 }
 
 func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {
@@ -209,8 +323,9 @@ func NewCell(reference interface{}, text string, color tcell.Color) *tview.Table
 func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		//log.Debug("EventKey: " + event.Name())
+		eventKey := event.Key()
 
-		switch event.Key() {
+		switch eventKey {
 		case tcell.KeyRune:
 			switch event.Rune() {
 			case 'i':
@@ -225,6 +340,8 @@ func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tc
 			case ' ':
 				log.Debug("spacebar pressed")
 				s.SelectRecordForCurrentRow()
+			default:
+				return s.DelegateAction(event)
 			}
 
 		case tcell.KeyTab:
@@ -234,6 +351,8 @@ func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tc
 		case tcell.KeyEnter:
 			s.LoadPreview(DIRECTION_NONE)
 			return nil
+		default:
+			return s.DelegateAction(event)
 		}
 
 		return event
@@ -246,9 +365,9 @@ const (
 	UP
 )
 
-func (s *Search) SetNextRowIndex(direction int) {
+func (s *Search) SetCurrentRowIndex(direction int) {
 	rowIndex, _ := s.ResultList.GetSelection()
-	log.Debugf("SetNextRowIndex row index before: %d", rowIndex)
+	log.Debugf("SetCurrentRowIndex row index before: %d", rowIndex)
 	switch direction {
 	case DOWN:
 		if rowIndex < (s.ResultList.GetRowCount() - 1) {
@@ -259,8 +378,18 @@ func (s *Search) SetNextRowIndex(direction int) {
 			rowIndex -= 1
 		}
 	}
-	log.Debugf("SetNextRowIndex row index: after %d", rowIndex)
+	log.Debugf("SetCurrentRowIndex row index: after %d", rowIndex)
 	s.CurrentRowIndex = rowIndex
+	// move keys like j and k controls the selection
+	// result list select only makes sense for shifting the focus over and selecting
+	s.App.StatusBar.SetText(fmt.Sprintf("%d", rowIndex))
+}
+
+func (s *Search) SelectRow(rowIndex int) {
+	if rowIndex == 0 || rowIndex < s.ResultList.GetRowCount() {
+		s.CurrentRowIndex = rowIndex
+		s.ResultList.Select(s.CurrentRowIndex, 0)
+	}
 }
 
 func (s *Search) GoToSearchResult() {
@@ -279,6 +408,31 @@ func (s *Search) GoToSearchBar() {
 	s.App.SetFocus(s.SearchBar)
 }
 
+func (s *Search) DelegateAction(event *tcell.EventKey) *tcell.EventKey {
+
+	// in search result
+
+	// get current row
+	s.SetCurrentRowIndex(DIRECTION_NONE)
+	log.Debugf("current row %d", s.CurrentRowIndex)
+	json, err := s.GetJsonFromRow(s.CurrentRowIndex)
+
+	// convert to minidoc
+	doc, err := MiniDocFrom(json)
+	if err != nil {
+		log.Errorf("minidoc from %v failed: %v", json, err)
+		return nil
+	}
+
+	// call doc.HandleEvent(key)
+	doc.HandleEvent(event)
+	// e.g.
+	// call receiver if key o = open for url, if key d = mark done for todo task
+	// return nil
+
+	return nil
+}
+
 func (s *Search) LoadPreview(direction int) {
 	if s.IsEditMode {
 		s.Columns.RemoveItem(s.EditForm)
@@ -286,7 +440,7 @@ func (s *Search) LoadPreview(direction int) {
 		s.IsEditMode = false
 	}
 
-	s.SetNextRowIndex(direction)
+	s.SetCurrentRowIndex(direction)
 	log.Debugf("current row %d", s.CurrentRowIndex)
 	json, err := s.GetJsonFromRow(s.CurrentRowIndex)
 	if err != nil {

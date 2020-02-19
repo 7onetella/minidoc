@@ -1,6 +1,7 @@
 package minidoc
 
 import (
+	"github.com/gdamore/tcell"
 	"strconv"
 )
 
@@ -21,6 +22,8 @@ type MiniDoc interface {
 	IsSelected() bool
 	SetIsSelected(bool)
 	IsSelectedString() string
+	HandleEvent(event *tcell.EventKey)
+	GetMarkdown() string
 }
 
 type BaseDoc struct {
@@ -92,9 +95,16 @@ func (m *BaseDoc) SetIsSelected(selected bool) {
 
 func (m *BaseDoc) IsSelectedString() string {
 	if m.Selected {
-		return "x"
+		return "✓️"
 	}
 	return " "
+}
+
+func (m *BaseDoc) HandleEvent(event *tcell.EventKey) {
+}
+
+func (m *BaseDoc) GetMarkdown() string {
+	return "### BaseDoc"
 }
 
 func (m *BaseDoc) GetDisplayFields() []string {

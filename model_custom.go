@@ -1,5 +1,11 @@
 package minidoc
 
+import (
+	"fmt"
+	"github.com/gdamore/tcell"
+	"strings"
+)
+
 var doctypes = []string{"url", "note", "todo"}
 
 var indexedFields = map[string][]string{
@@ -16,6 +22,28 @@ type URLDoc struct {
 
 func (u *URLDoc) GetJSON() interface{} {
 	return Jsonize(u)
+}
+
+func (m *URLDoc) HandleEvent(event *tcell.EventKey) {
+	eventKey := event.Key()
+
+	switch eventKey {
+	case tcell.KeyRune:
+		switch event.Rune() {
+		case 'o':
+			log.Debugf("opening url %s in the browser", m.URL)
+			_, err := Execute(strings.Split("open "+m.URL, " "))
+			if err != nil {
+				log.Errorf("urldoc exection: %v", err)
+				return
+			}
+		}
+	}
+
+}
+
+func (m *URLDoc) GetMarkdown() string {
+	return fmt.Sprintf(`[%s](%s)`, m.Title, m.URL)
 }
 
 func (u *URLDoc) GetDisplayFields() []string {

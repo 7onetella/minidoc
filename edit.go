@@ -175,18 +175,17 @@ func ConfirmDeleteModal(s *Search, json interface{}, deleteFunc func(doc MiniDoc
 				s.ResultList.RemoveRow(s.CurrentRowIndex)
 				// if at the end move up
 				if s.CurrentRowIndex == s.ResultList.GetRowCount() {
-					s.SetNextRowIndex(UP)
+					s.SetCurrentRowIndex(UP)
 				}
 				// if at the beginning move down
 				if s.CurrentRowIndex == 0 {
-					s.SetNextRowIndex(DIRECTION_NONE)
+					s.SetCurrentRowIndex(DIRECTION_NONE)
 				}
 			}
 
 			// calling this will trigger update of current row index again
 			// s.GoToSearchResult()
 			s.App.SetFocus(s.ResultList)
-			s.ResultList.Select(s.CurrentRowIndex, 0)
 			s.App.Draw()
 
 			if err := app.SetRoot(app.Layout, true).Run(); err != nil {

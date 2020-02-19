@@ -89,8 +89,13 @@ func NewSimpleApp(opts ...SimpleAppOption) *SimpleApp {
 		".",
 	}
 
+	status.SetText("Ctrl-L for help")
 	app.DebugView = NewDebugView(app)
-	app.Rows = newRows(menu, pageHandler.Pages)
+
+	app.Rows = tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(menu, 1, 1, false).
+		AddItem(pageHandler.Pages, 0, 9, true).
+		AddItem(status, 1, 1, false)
 
 	for _, opt := range opts {
 		opt(app)
@@ -159,10 +164,10 @@ func (app *SimpleApp) GetInputCaptureFunc() func(event *tcell.EventKey) *tcell.E
 		case tcell.KeyCtrlC:
 			app.Exit()
 		default:
-			if app.delegatedKeyEvent != nil {
-				delegated := app.delegatedKeyEvent(event)
-				return delegated
-			}
+			//if app.delegatedKeyEvent != nil {
+			//	delegated := app.delegatedKeyEvent(event)
+			//	return delegated
+			//}
 		}
 
 		return event
@@ -230,12 +235,6 @@ func (app *SimpleApp) ClearDebug() {
 func (app *SimpleApp) ClearMenu() {
 	app.MenuBar.Clear()
 	app.Draw()
-}
-
-func newRows(menu *tview.TextView, pages *tview.Pages) *tview.Flex {
-	return tview.NewFlex().SetDirection(tview.FlexRow).
-		AddItem(menu, 1, 1, false).
-		AddItem(pages, 0, 9, true)
 }
 
 func newTextViewBar() *tview.TextView {
