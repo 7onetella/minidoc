@@ -14,10 +14,12 @@ type New struct {
 	BucketHandler *BucketHandler
 }
 
-func NewNewPage(doctype string, app *SimpleApp) *New {
+func NewNewPage(doctype string) *New {
 	n := &New{
 		Layout: tview.NewFlex(),
 	}
+
+	log.Debug("new doctype: %s", doctype)
 
 	var doc MiniDoc
 	switch doctype {
@@ -25,10 +27,10 @@ func NewNewPage(doctype string, app *SimpleApp) *New {
 		doc = &URLDoc{}
 		doc.SetType("url")
 	case "note":
-		doc := &NoteDoc{}
+		doc = &NoteDoc{}
 		doc.SetType("note")
 	case "todo":
-		doc := &ToDoDoc{}
+		doc = &ToDoDoc{}
 		doc.SetType("todo")
 	}
 

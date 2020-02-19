@@ -165,7 +165,7 @@ func (s *Search) HandleCommand(command string) {
 	case "new":
 		doctype := terms[1]
 		if !s.App.PagesHandler.HasPage("New") {
-			newPage := NewNewPage(doctype, s.App)
+			newPage := NewNewPage(doctype)
 			s.App.PagesHandler.AddPage(s.App, newPage)
 			s.App.PagesHandler.GotoPageByTitle("New")
 			s.App.SetFocus(newPage.Form)
@@ -383,24 +383,28 @@ func (s *Search) EditCurrentFieldRowWithVi(event *tcell.EventKey) (*tcell.EventK
 	json := Jsonize(doc)
 	jh := NewJSONHandler(json)
 
-	inputFile := "/tmp/.minidoc_input.tmp"
-	WriteToFile(inputFile, jh.string("description"))
+	for _, fieldName := range doc.GetViEditFields() {
+		inputFile := "/tmp/.minidoc_input.tmp"
+		WriteToFile(inputFile, jh.string(fieldName))
 
-	OpenVim(s.App, inputFile)
+		OpenVim(s.App, inputFile)
 
-	content, err := ReadFromFile(inputFile)
-	log.Debugf("new content from input file: %s", content)
-	if err != nil {
-		log.Errorf("error reading: %v", err)
-	}
-	content = strings.TrimSpace(content)
-	jh.set("description", content)
-	log.Debugf("doc.description: %s", doc.GetDescription())
-	log.Debugf("json.description: %s", jh.string("description"))
-	doc, _ = MiniDocFrom(json)
-	err = s.App.DataHandler.Write(doc)
-	if err != nil {
-		log.Errorf("error writing: %v", err)
+		content, err := ReadFromFile(inputFile)
+		log.Debugf("new content from input file: %s", content)
+		if err != nil {
+			log.Errorf("error reading: %v", err)
+		}
+		content = strings.TrimSpace(content)
+		jh.set(fieldName, content)
+		log.Debugf("json.description: %s", jh.string(fieldName))
+		doc, err = MiniDocFrom(json)
+		if err != nil {
+			log.Errorf("error converting: %v", err)
+		}
+		err = s.App.DataHandler.Write(doc)
+		if err != nil {
+			log.Errorf("error writing: %v", err)
+		}
 	}
 	s.LoadPreview(DIRECTION_NONE)
 	return nil, false

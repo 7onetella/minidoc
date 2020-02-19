@@ -157,7 +157,10 @@ func (ih *IndexHandler) Search(queryString string) []MiniDoc {
 				// [43m [0m
 				fragment = strings.ReplaceAll(fragment, "[43m", "[yellow]")
 				fragment = strings.ReplaceAll(fragment, "[0m", "[white]")
-				rv += fmt.Sprintf("%s", fragment)
+				lines := strings.Split(fragment, "\n")
+				for _, line := range lines {
+					rv += fmt.Sprintf("%s ", line)
+				}
 			}
 			minidoc.Fragments = rv
 		}

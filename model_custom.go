@@ -85,6 +85,10 @@ func (n *NoteDoc) GetDisplayFields() []string {
 	}
 }
 
+func (m *NoteDoc) GetViEditFields() []string {
+	return []string{"note"}
+}
+
 // --------------------------------------------------------------------------------
 
 type ToDoDoc struct {

@@ -25,6 +25,7 @@ type MiniDoc interface {
 	HandleEvent(event *tcell.EventKey)
 	GetMarkdown() string
 	GetAvailableActions() string
+	GetViEditFields() []string
 }
 
 type BaseDoc struct {
@@ -121,4 +122,8 @@ func (m *BaseDoc) GetDisplayFields() []string {
 		"description",
 		"tags",
 	}
+}
+
+func (m *BaseDoc) GetViEditFields() []string {
+	return []string{}
 }

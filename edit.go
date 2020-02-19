@@ -41,7 +41,10 @@ func NewEditorForm(doc MiniDoc) *tview.Form {
 	json := Jsonize(doc)
 	jh := NewJSONHandler(json)
 	f.SetTitle(jh.string("type") + ":" + jh.string("id"))
-
+	if doc == nil {
+		log.Errorf("doc is nil")
+		return nil
+	}
 	for _, fieldName := range doc.GetDisplayFields() {
 		if fieldName == "type" || fieldName == "id" || fieldName == "created_date" {
 			continue
