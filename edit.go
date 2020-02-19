@@ -13,15 +13,16 @@ type Edit struct {
 	debug  func(string)
 }
 
-func NewEdit(s *Search, json interface{}) *Edit {
+func NewEdit(s *Search, doc MiniDoc) *Edit {
+	json := Jsonize(doc)
+
 	edit := &Edit{
 		Search: s,
 		debug:  s.App.DebugView.Debug,
 		json:   json,
 	}
 
-	f := NewEditorForm(json)
-
+	f := NewEditorForm(doc)
 	f.AddButton("Update", edit.UpdateAction)
 	f.AddButton("Delete", edit.DeleteAction)
 	f.AddButton("Cancel", edit.CancelAction)
@@ -33,13 +34,10 @@ func NewEdit(s *Search, json interface{}) *Edit {
 	return edit
 }
 
-func NewEditorForm(json interface{}) *tview.Form {
+func NewEditorForm(doc MiniDoc) *tview.Form {
 	f := tview.NewForm()
-	doc, err := MiniDocFrom(json)
-	if err != nil {
-		log.Errorf("converting to minidoc failed json=%v: %v", json, err)
-	}
 
+	json := Jsonize(doc)
 	jh := NewJSONHandler(json)
 	f.SetTitle(jh.string("type") + ":" + jh.string("id"))
 

@@ -42,6 +42,10 @@ func (m *URLDoc) HandleEvent(event *tcell.EventKey) {
 
 }
 
+func (M *URLDoc) GetAvailableActions() string {
+	return "[yellow]o[white] <= open url in browser"
+}
+
 func (m *URLDoc) GetMarkdown() string {
 	return fmt.Sprintf(`[%s](%s)`, m.Title, m.URL)
 }

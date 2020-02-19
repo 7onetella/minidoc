@@ -24,6 +24,7 @@ type MiniDoc interface {
 	IsSelectedString() string
 	HandleEvent(event *tcell.EventKey)
 	GetMarkdown() string
+	GetAvailableActions() string
 }
 
 type BaseDoc struct {
@@ -105,6 +106,10 @@ func (m *BaseDoc) HandleEvent(event *tcell.EventKey) {
 
 func (m *BaseDoc) GetMarkdown() string {
 	return "### BaseDoc"
+}
+
+func (M *BaseDoc) GetAvailableActions() string {
+	return "nothing really"
 }
 
 func (m *BaseDoc) GetDisplayFields() []string {

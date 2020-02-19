@@ -19,27 +19,25 @@ func NewNewPage(doctype string) *New {
 		Layout: tview.NewFlex(),
 	}
 
-	var json interface{}
 	var doc MiniDoc
 	switch doctype {
 	case "url":
 		doc = &URLDoc{}
 		doc.SetType("url")
-		json = Jsonize(doc)
 	case "note":
 		doc := &NoteDoc{}
 		doc.SetType("note")
-		json = Jsonize(doc)
 	case "todo":
 		doc := &ToDoDoc{}
 		doc.SetType("todo")
-		json = Jsonize(doc)
 	}
 
-	n.Form = NewEditorForm(json)
+	n.Form = NewEditorForm(doc)
 	n.Form.SetBorder(false)
 	n.Form.AddButton("Create", n.CreateAction)
 	n.Form.AddButton("Cancel", n.CancelAction)
+	var json interface{}
+	json = Jsonize(doc)
 	n.json = json
 
 	return n

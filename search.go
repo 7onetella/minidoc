@@ -176,15 +176,9 @@ func (s *Search) HandleCommand(command string) {
 			markdown := ""
 			for i := 0; i < s.ResultList.GetRowCount(); i++ {
 				log.Debugf("current row %d", s.CurrentRowIndex)
-				json, err := s.GetJsonFromRow(i)
+				doc, err := s.GetMiniDocFromRow(i)
 				if err != nil {
-					log.Errorf("minidoc from %v failed: %v", json, err)
-					return
-				}
-
-				doc, err := MiniDocFrom(json)
-				if err != nil {
-					log.Errorf("minidoc from %v failed: %v", json, err)
+					log.Errorf("minidoc from failed: %v", err)
 					return
 				}
 
@@ -380,9 +374,6 @@ func (s *Search) SetCurrentRowIndex(direction int) {
 	}
 	log.Debugf("SetCurrentRowIndex row index: after %d", rowIndex)
 	s.CurrentRowIndex = rowIndex
-	// move keys like j and k controls the selection
-	// result list select only makes sense for shifting the focus over and selecting
-	s.App.StatusBar.SetText(fmt.Sprintf("%d", rowIndex))
 }
 
 func (s *Search) SelectRow(rowIndex int) {
@@ -415,12 +406,9 @@ func (s *Search) DelegateAction(event *tcell.EventKey) *tcell.EventKey {
 	// get current row
 	s.SetCurrentRowIndex(DIRECTION_NONE)
 	log.Debugf("current row %d", s.CurrentRowIndex)
-	json, err := s.GetJsonFromRow(s.CurrentRowIndex)
-
-	// convert to minidoc
-	doc, err := MiniDocFrom(json)
+	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
 	if err != nil {
-		log.Errorf("minidoc from %v failed: %v", json, err)
+		log.Errorf("minidoc from failed: %v", err)
 		return nil
 	}
 
@@ -441,23 +429,23 @@ func (s *Search) LoadPreview(direction int) {
 	}
 
 	s.SetCurrentRowIndex(direction)
+
 	log.Debugf("current row %d", s.CurrentRowIndex)
-	json, err := s.GetJsonFromRow(s.CurrentRowIndex)
+	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
 	if err != nil {
-		log.Errorf("minidoc from %v failed: %v", json, err)
+		log.Errorf("minidoc from failed: %v", err)
 		return
 	}
 
-	doc, err := MiniDocFrom(json)
-	if err != nil {
-		log.Errorf("minidoc from %v failed: %v", json, err)
-		return
-	}
+	// move keys like j and k controls the selection
+	// result list select only makes sense for shifting the focus over and selecting
+	s.App.StatusBar.SetText(fmt.Sprintf("%d | %s", s.CurrentRowIndex, doc.GetAvailableActions()))
 
+	json := Jsonize(doc)
 	jh := NewJSONHandler(json)
 
 	content := ""
-	s.Detail.SetTitle(jh.string("type") + ":" + jh.string("id"))
+	s.Detail.SetTitle(doc.GetIDString())
 
 	for _, fieldName := range doc.GetDisplayFields() {
 		if fieldName == "type" || fieldName == "id" {
@@ -478,7 +466,7 @@ func (s *Search) LoadPreview(direction int) {
 func (s *Search) LoadEdit() {
 	s.ResultList.SetSelectable(false, false)
 
-	json, err := s.GetJsonFromRow(s.CurrentRowIndex)
+	json, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
 	if err != nil {
 		log.Debugf("error getting json from curr row: %v", err)
 		return
@@ -502,15 +490,9 @@ func (s *Search) DeleteSelectedRows() {
 func (s *Search) BatchDelete() {
 	for i := 0; i < s.ResultList.GetRowCount(); i++ {
 		log.Debugf("current row %d", s.CurrentRowIndex)
-		json, err := s.GetJsonFromRow(i)
+		doc, err := s.GetMiniDocFromRow(i)
 		if err != nil {
-			log.Errorf("minidoc from %v failed: %v", json, err)
-			return
-		}
-
-		doc, err := MiniDocFrom(json)
-		if err != nil {
-			log.Errorf("minidoc from %v failed: %v", json, err)
+			log.Errorf("minidoc from failed: %v", err)
 			return
 		}
 
@@ -532,15 +514,9 @@ func (s *Search) BatchDelete() {
 
 func (s *Search) SelectRecordForCurrentRow() {
 	log.Debugf("current row %d", s.CurrentRowIndex)
-	json, err := s.GetJsonFromRow(s.CurrentRowIndex)
+	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
 	if err != nil {
-		log.Errorf("minidoc from %v failed: %v", json, err)
-		return
-	}
-
-	doc, err := MiniDocFrom(json)
-	if err != nil {
-		log.Errorf("minidoc from %v failed: %v", json, err)
+		log.Errorf("minidoc from failed: %v", err)
 		return
 	}
 
@@ -562,7 +538,7 @@ func (s *Search) DeleteFunc(doc MiniDoc) error {
 	return err
 }
 
-func (s *Search) GetJsonFromRow(rowIndex int) (interface{}, error) {
+func (s *Search) GetMiniDocFromRow(rowIndex int) (MiniDoc, error) {
 	ref := s.ResultList.GetCell(rowIndex, idColumnIndex).GetReference()
 	id, ok := ref.(uint32)
 	if !ok {
@@ -605,9 +581,7 @@ func (s *Search) GetJsonFromRow(rowIndex int) (interface{}, error) {
 	doc, _ := MiniDocFrom(json)
 	doc.SetIsSelected(isSelected)
 	doc.SetSearchFragments(fragments)
-	json = Jsonize(doc)
-	log.Debugf("json")
-	return json, nil
+	return doc, nil
 }
 
 //type RefHandler struct{
