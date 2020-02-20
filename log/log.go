@@ -68,8 +68,8 @@ func newLogrusLogger(cfg config.Provider) *logrus.Logger {
 	//}
 
 	l.SetFormatter(&logrus.TextFormatter{
-		ForceColors: true,
-		//DisableColors: false,
+		//ForceColors: true,
+		DisableColors: true,
 		FullTimestamp: false,
 	})
 

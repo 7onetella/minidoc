@@ -2,6 +2,7 @@ package minidoc
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gdamore/tcell"
@@ -142,6 +143,33 @@ func (s *Search) Search(searchby string) bool {
 		return true
 	}
 
+	for _, doctype := range doctypes {
+		// e.g. url:10
+		if strings.HasPrefix(searchTerms, doctype+":") {
+			terms := strings.Split(searchTerms, " ")
+			if len(terms) == 1 {
+				idstr := searchTerms[strings.Index(searchTerms, ":")+1:]
+				v, _ := strconv.Atoi(idstr)
+				id := uint32(v)
+				doc, err := s.App.BucketHandler.Read(id, doctype)
+				// most likely record not found
+				if err != nil {
+					s.UpdateResult([]MiniDoc{})
+					return false
+				}
+				doc.SetSearchFragments(doc.GetTitle())
+				s.UpdateResult([]MiniDoc{doc})
+				return false
+			}
+		}
+
+		// e.g. url is typed
+		if searchTerms == doctype {
+			s.HandleCommand("@list " + searchTerms)
+			return true
+		}
+	}
+
 	result := s.App.IndexHandler.Search(searchTerms)
 	if result == nil {
 		s.debug("result is empty")
@@ -172,7 +200,6 @@ func (s *Search) UpdateResult(result []MiniDoc) {
 }
 
 func (s *Search) UpdateRow(rowIndex int, doc MiniDoc) {
-	log.Debugf("updating row: id=%d row_index=%d minidoc=%v", doc.GetID(), rowIndex, doc)
 	doctype := doc.GetType()
 	doctype = strings.TrimSpace(doctype)
 	fragments := doc.GetSearchFragments()

@@ -8,6 +8,10 @@ func (s *Search) HandleCommand(command string) {
 	verb := terms[0]
 	log.Debugf("command terms %s", terms)
 
+	if len(terms) == 1 {
+		return
+	}
+
 	switch verb {
 	case "new":
 		doctype := terms[1]

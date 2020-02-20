@@ -1,6 +1,7 @@
 package minidoc
 
 import (
+	"fmt"
 	"github.com/rivo/tview"
 )
 
@@ -71,7 +72,7 @@ func (n *New) CreateAction() {
 	}
 	log.Debugf("minidoc from json: %v", n.json)
 
-	err = n.Save(doc)
+	id, err := n.Save(doc)
 	if err != nil {
 		log.Errorf("updating %v failed: %v", doc, err)
 		return
@@ -79,16 +80,17 @@ func (n *New) CreateAction() {
 
 	n.App.PagesHandler.RemoveLastPage(n.App)
 	n.App.PagesHandler.GotoPageByTitle("Search")
+	n.App.StatusBar.SetText(fmt.Sprintf("[green]%s:%d created[white]", doc.GetType(), id))
 	n.App.Draw()
 }
 
-func (n *New) Save(doc MiniDoc) error {
-	_, err := n.App.BucketHandler.Write(doc)
+func (n *New) Save(doc MiniDoc) (uint32, error) {
+	id, err := n.App.BucketHandler.Write(doc)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	err = n.App.IndexHandler.Index(doc)
-	return err
+	return id, err
 }
 
 func (n *New) Reset() {
