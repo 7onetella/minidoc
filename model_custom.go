@@ -62,10 +62,6 @@ func (u *URLDoc) GetDisplayFields() []string {
 	}
 }
 
-func (m *URLDoc) GetViEditFields() []string {
-	return []string{"description"}
-}
-
 func (m *URLDoc) GetToggleValueAsString() string {
 	if m.WatchLater {
 		return "✓️"
