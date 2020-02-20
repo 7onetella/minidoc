@@ -128,10 +128,11 @@ func (s *Search) ResetSearchBar() {
 	}
 }
 
-const idColumnIndex = 1
 const typeColumnIndex = 0
-const fragmentsColumnIndex = 3
+const idColumnIndex = 1
 const selectedColumnIndex = 2
+const toggledColumnIndex = 3
+const fragmentsColumnIndex = 4
 
 func (s *Search) ShowSearchResult(searchby string) bool {
 	searchTerms := ""
@@ -161,9 +162,11 @@ func (s *Search) UpdateResultList(result []MiniDoc) {
 	s.ResultList.InsertColumn(0)
 	// id
 	s.ResultList.InsertColumn(0)
-	// matched
-	s.ResultList.InsertColumn(0)
 	// selected
+	s.ResultList.InsertColumn(0)
+	// toggled
+	s.ResultList.InsertColumn(0)
+	// matched
 	s.ResultList.InsertColumn(0)
 
 	// Display search result
@@ -187,16 +190,32 @@ func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {
 	log.Debugf("updating row: id=%d row_index=%d minidoc=%v", doc.GetID(), rowIndex, doc)
 	doctype := doc.GetType()
 	doctype = strings.TrimSpace(doctype)
+	fragments := doc.GetSearchFragments()
+	selected := doc.IsSelected()
+	if doctype == "todo" || doctype == "url" {
+		// swap it out with the the one from db
+		docFromDB, _ := s.App.DataHandler.BucketHandler.Read(doc.GetID(), doc.GetType())
+		doc = docFromDB
+		doc.SetSearchFragments(fragments)
+		doc.SetIsSelected(selected)
+	}
 	i := 0
+	// type
 	s.ResultList.SetCell(rowIndex, i, NewCellWithBG(doctype, doc.GetIDString(), tcell.ColorWhite, tcell.ColorGray))
 	i++
+	// id
 	s.ResultList.SetCell(rowIndex, i, NewCell(doc.GetID(), "", tcell.ColorWhite))
 	i++
+	// selected
 	s.ResultList.SetCell(rowIndex, i, NewCell(doc.IsSelected(), doc.IsSelectedString(), tcell.ColorWhite))
 	i++
+	// toggled
+	s.ResultList.SetCell(rowIndex, i, NewCell(doc.GetToggle(), doc.GetToggleValueAsString(), tcell.ColorWhite))
+	i++
+	// matched
 	// pad empty space to keep the result row width wider than few character wide
-	log.Debugf("search fragments from doc %s", doc.GetSearchFragments())
-	matched := doc.GetSearchFragments() + "                                                             "
+	log.Debugf("search fragments from doc %s", fragments)
+	matched := fragments + "                                                             "
 	s.ResultList.SetCell(rowIndex, i, NewCell(matched, matched, tcell.ColorWhite))
 }
 
@@ -241,8 +260,10 @@ func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tc
 					return key
 				}
 			case ' ':
-				log.Debug("spacebar pressed")
 				s.SelectRecordForCurrentRow()
+			case 't':
+				s.ToggleRecordForCurrentRow()
+				s.LoadPreview(DIRECTION_NONE)
 			default:
 				return s.DelegateAction(event)
 			}
@@ -358,7 +379,6 @@ func (s *Search) DelegateAction(event *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
-	// call doc.HandleEvent(key)
 	doc.HandleEvent(event)
 	s.App.DataHandler.Write(doc)
 	s.LoadPreview(DIRECTION_NONE)
@@ -486,6 +506,25 @@ func (s *Search) SelectRecordForCurrentRow() {
 	s.UpdateSearchResultRow(s.CurrentRowIndex, doc)
 }
 
+func (s *Search) ToggleRecordForCurrentRow() {
+	log.Debugf("current row %d", s.CurrentRowIndex)
+	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
+	if err != nil {
+		log.Errorf("minidoc from failed: %v", err)
+		return
+	}
+
+	if doc.GetToggle() {
+		doc.SetToggle(false)
+	} else {
+		doc.SetToggle(true)
+	}
+
+	s.App.DataHandler.Write(doc)
+
+	s.UpdateSearchResultRow(s.CurrentRowIndex, doc)
+}
+
 func (s *Search) DeleteFunc(doc MiniDoc) error {
 	err := s.App.BucketHandler.Delete(doc)
 	if err != nil {
@@ -503,6 +542,7 @@ func (s *Search) GetMiniDocFromRow(rowIndex int) (MiniDoc, error) {
 		log.Errorf(msg)
 		return nil, fmt.Errorf(msg)
 	}
+
 	ref = s.ResultList.GetCell(rowIndex, typeColumnIndex).GetReference()
 	doctype, ok := ref.(string)
 	if !ok {
@@ -510,6 +550,7 @@ func (s *Search) GetMiniDocFromRow(rowIndex int) (MiniDoc, error) {
 		log.Errorf(msg)
 		return nil, fmt.Errorf(msg)
 	}
+
 	ref = s.ResultList.GetCell(rowIndex, fragmentsColumnIndex).GetReference()
 	fragments, ok := ref.(string)
 	if !ok {
@@ -518,6 +559,7 @@ func (s *Search) GetMiniDocFromRow(rowIndex int) (MiniDoc, error) {
 		return nil, fmt.Errorf(msg)
 	}
 	log.Debugf("read fragments from current row %s", fragments)
+
 	ref = s.ResultList.GetCell(rowIndex, selectedColumnIndex).GetReference()
 	isSelected, ok := ref.(bool)
 	if !ok {
@@ -526,7 +568,7 @@ func (s *Search) GetMiniDocFromRow(rowIndex int) (MiniDoc, error) {
 		return nil, fmt.Errorf(msg)
 	}
 
-	json, err := s.App.BucketHandler.Read(id, doctype)
+	doc, err := s.App.BucketHandler.Read(id, doctype)
 	if err != nil {
 		log.Debugf("read error: %v", err)
 		return nil, err
@@ -534,8 +576,7 @@ func (s *Search) GetMiniDocFromRow(rowIndex int) (MiniDoc, error) {
 
 	// json unmarshaller will exclude empty value fields
 	// jh.set("fragments", fragments) will throw error
-	// convert to minidoc to set these two values
-	doc, _ := MiniDocFrom(json)
+	// make sure we return minido
 	doc.SetIsSelected(isSelected)
 	doc.SetSearchFragments(fragments)
 	return doc, nil

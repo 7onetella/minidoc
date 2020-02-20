@@ -26,6 +26,9 @@ type MiniDoc interface {
 	GetMarkdown() string
 	GetAvailableActions() string
 	GetViEditFields() []string
+	GetToggleValueAsString() string
+	SetToggle(toggle bool)
+	GetToggle() bool
 }
 
 type BaseDoc struct {
@@ -37,6 +40,7 @@ type BaseDoc struct {
 	Tags        string `json:"tags"`
 	Fragments   string `json:"fragments"`
 	Selected    bool   `json:"selected"`
+	Toggled     bool   `json:"toggle"`
 }
 
 func (m *BaseDoc) GetID() uint32 {
@@ -126,4 +130,16 @@ func (m *BaseDoc) GetDisplayFields() []string {
 
 func (m *BaseDoc) GetViEditFields() []string {
 	return []string{}
+}
+
+func (m *BaseDoc) GetToggleValueAsString() string {
+	return " "
+}
+
+func (m *BaseDoc) SetToggle(toggle bool) {
+	m.Toggled = toggle
+}
+
+func (m *BaseDoc) GetToggle() bool {
+	return m.Toggled
 }

@@ -143,8 +143,8 @@ func (ih *IndexHandler) Search(queryString string) []MiniDoc {
 		if title, ok := hit.Fields["title"].(string); ok {
 			minidoc.Title = title
 		}
-		if tags, ok := hit.Fields["description"].(string); ok {
-			minidoc.Tags = tags
+		if description, ok := hit.Fields["description"].(string); ok {
+			minidoc.Description = description
 		}
 		if tags, ok := hit.Fields["tags"].(string); ok {
 			minidoc.Tags = tags

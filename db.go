@@ -119,7 +119,7 @@ func (bh *BucketHandler) ReadAll(doctype string) ([]interface{}, error) {
 	return docs, nil
 }
 
-func (bh *BucketHandler) Read(key uint32, doctype string) (interface{}, error) {
+func (bh *BucketHandler) Read(key uint32, doctype string) (MiniDoc, error) {
 	bx, err := buckets.Open(bh.DBPath)
 	if err != nil {
 		log.Errorf("error while opening bucket[%s] at %s: %v", doctype, bh.DBPath, err)
@@ -151,7 +151,8 @@ func (bh *BucketHandler) Read(key uint32, doctype string) (interface{}, error) {
 		return nil, err
 	}
 
-	return jsonDoc, nil
+	return MiniDocFrom(jsonDoc)
+	//return jsonDoc, nil
 }
 
 func (bh *BucketHandler) Delete(doc MiniDoc) error {

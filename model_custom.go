@@ -66,6 +66,21 @@ func (m *URLDoc) GetViEditFields() []string {
 	return []string{"description"}
 }
 
+func (m *URLDoc) GetToggleValueAsString() string {
+	if m.WatchLater {
+		return "✓️"
+	}
+	return " "
+}
+
+func (m *URLDoc) SetToggle(toggle bool) {
+	m.WatchLater = toggle
+}
+
+func (m *URLDoc) GetToggle() bool {
+	return m.WatchLater
+}
+
 // --------------------------------------------------------------------------------
 
 type NoteDoc struct {
@@ -121,20 +136,15 @@ func (d *ToDoDoc) GetDisplayFields() []string {
 }
 
 func (d *ToDoDoc) HandleEvent(event *tcell.EventKey) {
-	eventKey := event.Key()
-
-	switch eventKey {
-	case tcell.KeyRune:
-		switch event.Rune() {
-		case 'd':
-			log.Debugf("marking %s as done or undone")
-			if d.Done {
-				d.Done = false
-			} else {
-				d.Done = true
-			}
-		}
-	}
+	//eventKey := event.Key()
+	//
+	//switch eventKey {
+	//case tcell.KeyRune:
+	//	switch event.Rune() {
+	//	case 'd':
+	//		log.Debugf("marking %s as done or undone")
+	//	}
+	//}
 }
 
 func (d *ToDoDoc) GetAvailableActions() string {
@@ -148,4 +158,19 @@ func (d *ToDoDoc) GetMarkdown() string {
 
 func (d *ToDoDoc) GetTitle() string {
 	return d.Task
+}
+
+func (d *ToDoDoc) GetToggleValueAsString() string {
+	if d.Done {
+		return "✓️"
+	}
+	return " "
+}
+
+func (d *ToDoDoc) SetToggle(toggle bool) {
+	d.Done = toggle
+}
+
+func (d *ToDoDoc) GetToggle() bool {
+	return d.Done
 }

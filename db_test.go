@@ -28,12 +28,12 @@ func TestBucketHandler_Read(t *testing.T) {
 		if err != nil || ID == 0 {
 			t.Fail()
 		}
-		jsonDoc, err := db.Read(ID, doc.GetType())
+		doc2, err := db.Read(ID, doc.GetType())
 		if err != nil {
 			t.Log(err)
 			t.Fail()
 		}
-		fmt.Println(jsonDoc)
+		fmt.Println(doc2)
 	}
 	for i := 0; i < 10; i++ {
 		db := NewBucketHandler()
@@ -42,12 +42,12 @@ func TestBucketHandler_Read(t *testing.T) {
 		if err != nil || ID == 0 {
 			t.Fail()
 		}
-		jsonDoc, err := db.Read(ID, doc.GetType())
+		doc2, err := db.Read(ID, doc.GetType())
 		if err != nil {
 			t.Log(err)
 			t.Fail()
 		}
-		fmt.Println(jsonDoc)
+		fmt.Println(doc2)
 	}
 	for i := 0; i < 10; i++ {
 		db := NewBucketHandler()
@@ -56,12 +56,12 @@ func TestBucketHandler_Read(t *testing.T) {
 		if err != nil || ID == 0 {
 			t.Fail()
 		}
-		jsonDoc, err := db.Read(ID, doc.GetType())
+		doc2, err := db.Read(ID, doc.GetType())
 		if err != nil {
 			t.Log(err)
 			t.Fail()
 		}
-		fmt.Println(jsonDoc)
+		fmt.Println(doc2)
 	}
 }
 
