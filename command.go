@@ -25,7 +25,7 @@ func (s *Search) HandleCommand(command string) {
 			markdown := ""
 			for i := 0; i < s.ResultList.GetRowCount(); i++ {
 				log.Debugf("current row %d", s.CurrentRowIndex)
-				doc, err := s.GetMiniDocFromRow(i)
+				doc, err := s.LoadMiniDocFromDB(i)
 				if err != nil {
 					log.Errorf("minidoc from failed: %v", err)
 					return

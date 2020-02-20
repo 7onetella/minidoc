@@ -29,6 +29,7 @@ type MiniDoc interface {
 	GetToggleValueAsString() string
 	SetToggle(toggle bool)
 	GetToggle() bool
+	IsTogglable() bool
 }
 
 type BaseDoc struct {
@@ -142,4 +143,8 @@ func (m *BaseDoc) SetToggle(toggle bool) {
 
 func (m *BaseDoc) GetToggle() bool {
 	return m.Toggled
+}
+
+func (m *BaseDoc) IsTogglable() bool {
+	return m.Type == "todo" || m.Type == "url"
 }

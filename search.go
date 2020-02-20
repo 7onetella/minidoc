@@ -2,7 +2,6 @@ package minidoc
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/gdamore/tcell"
@@ -12,11 +11,10 @@ import (
 type Search struct {
 	App             *SimpleApp
 	SearchBar       *tview.Form
-	ResultList      *tview.Table
+	ResultList      *ResultList
 	Detail          *tview.TextView
 	Columns         *tview.Flex
 	Layout          *tview.Flex
-	IsResetted      bool
 	IsEditMode      bool
 	EditForm        *tview.Form
 	CurrentRowIndex int
@@ -38,15 +36,9 @@ func (s *Search) SetApp(app *SimpleApp) {
 
 // SearchPage returns search page
 func (s *Search) Page() (title string, content tview.Primitive) {
-	s.ResetSearchBar()
+	s.InitSearchBar()
 
-	s.ResultList = tview.NewTable()
-	s.ResultList.
-		SetBorders(false).
-		SetSeparator(' ').
-		SetTitle("Results")
-	s.ResultList.SetBorder(true)
-	s.ResultList.SetBorderPadding(1, 1, 2, 2)
+	s.ResultList = NewResultList(s)
 
 	s.Detail = tview.NewTextView()
 	s.Detail.SetBorder(true)
@@ -69,62 +61,66 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 
 var words = []string{"@new", "@list", "@generate"}
 
-func (s *Search) ResetSearchBar() {
-	log.Debug("resetting search bar")
+func (s *Search) InitSearchBar() {
+	//log.Debug("resetting search bar")
 	s.SearchBar.AddInputField("", "", 0, nil, nil)
 	s.SearchBar.SetBorderPadding(0, 1, 0, 0)
 	item := s.SearchBar.GetFormItem(0)
 	input, ok := item.(*tview.InputField)
-
 	if ok {
-		input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		input.SetInputCapture(s.GetSearchBarInputCapture(input))
+	}
 
-			text := input.GetText()
-			var terms []string
-			if len(text) > 0 {
-				terms = strings.Split(text, " ")
-			}
-			if event.Key() == tcell.KeyEnter {
-				// if term0 starts with @ and terms length is 1 then disregard enter
-				if len(terms) == 0 && strings.HasPrefix(terms[0], "@") {
-					return event
-				}
-				done := s.ShowSearchResult(text)
-				if done {
-					return nil
-				}
-				s.ResultList.ScrollToBeginning()
-				s.SelectRow(0)
-				s.App.SetFocus(s.SearchBar)
-				defer s.App.Draw()
-				return nil
-			}
-
-			if event.Key() == tcell.KeyTab {
-				if len(terms) == 1 && strings.HasPrefix(terms[0], "@") {
-					return event
-				}
-				log.Debug("tab pressed from search bar")
-				s.GoToSearchResult()
-				return nil
-			}
-
-			return event
-		})
-		input.SetAutocompleteFunc(func(currentText string) (entries []string) {
-			if len(currentText) == 0 {
-				return
-			}
-			for _, word := range words {
-				if strings.HasPrefix(strings.ToLower(word), strings.ToLower(currentText)) {
-					entries = append(entries, word)
-				}
-			}
-			if len(entries) <= 1 {
-				entries = nil
-			}
+	input.SetAutocompleteFunc(func(currentText string) (entries []string) {
+		if len(currentText) == 0 {
 			return
-		})
+		}
+		for _, word := range words {
+			if strings.HasPrefix(strings.ToLower(word), strings.ToLower(currentText)) {
+				entries = append(entries, word)
+			}
+		}
+		if len(entries) <= 1 {
+			entries = nil
+		}
+		return
+	})
+}
+
+func (s *Search) GetSearchBarInputCapture(input *tview.InputField) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+
+		text := input.GetText()
+		var terms []string
+		if len(text) > 0 {
+			terms = strings.Split(text, " ")
+		}
+		if event.Key() == tcell.KeyEnter {
+			// if term0 starts with @ and terms length is 1 then disregard enter
+			if len(terms) == 0 && strings.HasPrefix(terms[0], "@") {
+				return event
+			}
+			done := s.ShowSearchResult(text)
+			if done {
+				return nil
+			}
+			s.ResultList.ScrollToBeginning()
+			s.SelectRow(0)
+			s.App.SetFocus(s.SearchBar)
+			defer s.App.Draw()
+			return nil
+		}
+
+		if event.Key() == tcell.KeyTab {
+			if len(terms) == 1 && strings.HasPrefix(terms[0], "@") {
+				return event
+			}
+			log.Debug("tab pressed from search bar")
+			s.GoToSearchResult()
+			return nil
+		}
+
+		return event
 	}
 }
 
@@ -159,15 +155,7 @@ func (s *Search) ShowSearchResult(searchby string) bool {
 func (s *Search) UpdateResultList(result []MiniDoc) {
 	s.ResultList.Clear()
 	// doc type
-	s.ResultList.InsertColumn(0)
-	// id
-	s.ResultList.InsertColumn(0)
-	// selected
-	s.ResultList.InsertColumn(0)
-	// toggled
-	s.ResultList.InsertColumn(0)
-	// matched
-	s.ResultList.InsertColumn(0)
+	s.ResultList.InsertColumns(5)
 
 	// Display search result
 	for _, doc := range result {
@@ -177,10 +165,7 @@ func (s *Search) UpdateResultList(result []MiniDoc) {
 
 	s.ResultList.SetSelectable(false, false)
 	s.ResultList.SetSeparator(' ')
-	s.ResultList.SetSelectedStyle(tcell.ColorGray, tcell.ColorWhite, tcell.AttrNone)
 	s.Detail.Clear()
-
-	s.ResultList.SetInputCapture(s.GetResultListInputCaptureFunc())
 
 	s.App.SetFocus(s.ResultList)
 	s.App.Draw()
@@ -192,100 +177,27 @@ func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {
 	doctype = strings.TrimSpace(doctype)
 	fragments := doc.GetSearchFragments()
 	selected := doc.IsSelected()
-	if doctype == "todo" || doctype == "url" {
+
+	if doc.IsTogglable() {
 		// swap it out with the the one from db
 		docFromDB, _ := s.App.DataHandler.BucketHandler.Read(doc.GetID(), doc.GetType())
 		doc = docFromDB
 		doc.SetSearchFragments(fragments)
 		doc.SetIsSelected(selected)
 	}
-	i := 0
-	// type
-	s.ResultList.SetCell(rowIndex, i, NewCellWithBG(doctype, doc.GetIDString(), tcell.ColorWhite, tcell.ColorGray))
-	i++
-	// id
-	s.ResultList.SetCell(rowIndex, i, NewCell(doc.GetID(), "", tcell.ColorWhite))
-	i++
-	// selected
-	s.ResultList.SetCell(rowIndex, i, NewCell(doc.IsSelected(), doc.IsSelectedString(), tcell.ColorWhite))
-	i++
-	// toggled
-	s.ResultList.SetCell(rowIndex, i, NewCell(doc.GetToggle(), doc.GetToggleValueAsString(), tcell.ColorWhite))
-	i++
-	// matched
-	// pad empty space to keep the result row width wider than few character wide
-	log.Debugf("search fragments from doc %s", fragments)
-	matched := fragments + "                                                             "
-	s.ResultList.SetCell(rowIndex, i, NewCell(matched, matched, tcell.ColorWhite))
-}
 
-func NewCellWithBG(reference interface{}, text string, color, bg tcell.Color) *tview.TableCell {
-	return &tview.TableCell{
-		Reference:       reference,
-		Text:            text,
-		Align:           tview.AlignLeft,
-		Color:           color,
-		BackgroundColor: bg,
+	cd := []CellData{
+		CellData{doctype, doc.GetIDString()},
+		CellData{doc.GetID(), ""},
+		CellData{doc.IsSelected(), doc.IsSelectedString()},
+		CellData{doc.GetToggle(), doc.GetToggleValueAsString()},
+		CellData{fragments + cellpadding, fragments + cellpadding},
 	}
-}
-
-func NewCell(reference interface{}, text string, color tcell.Color) *tview.TableCell {
-	return &tview.TableCell{
-		Reference:       reference,
-		Text:            text,
-		Align:           tview.AlignLeft,
-		Color:           color,
-		BackgroundColor: tcell.ColorGray,
-	}
-}
-
-func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tcell.EventKey {
-	return func(event *tcell.EventKey) *tcell.EventKey {
-		//log.Debug("EventKey: " + event.Name())
-		eventKey := event.Key()
-
-		switch eventKey {
-		case tcell.KeyRune:
-			switch event.Rune() {
-			case 'i':
-				s.LoadEdit()
-			case 'j':
-				// if the current mode is edit then remove edit and load detail
-				s.LoadPreview(DOWN)
-			case 'k':
-				s.LoadPreview(UP)
-			case 'e':
-				key, done := s.EditCurrentFieldRowWithVi(event)
-				if done {
-					return key
-				}
-			case ' ':
-				s.SelectRecordForCurrentRow()
-			case 't':
-				s.ToggleRecordForCurrentRow()
-				s.LoadPreview(DIRECTION_NONE)
-			default:
-				return s.DelegateAction(event)
-			}
-
-		case tcell.KeyTab:
-			s.GoToSearchBar()
-			return nil
-		case tcell.KeyEnter:
-			s.LoadPreview(DIRECTION_NONE)
-			return nil
-		case tcell.KeyCtrlD:
-			s.DeleteSelectedRows()
-		default:
-			return s.DelegateAction(event)
-		}
-
-		return event
-	}
+	s.ResultList.SetColumnCells(rowIndex, cd)
 }
 
 func (s *Search) EditCurrentFieldRowWithVi(event *tcell.EventKey) (*tcell.EventKey, bool) {
-	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
+	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
 		log.Debugf("error getting json from curr row: %v", err)
 		return event, true
@@ -359,9 +271,8 @@ func (s *Search) GoToSearchResult() {
 
 func (s *Search) GoToSearchBar() {
 	s.ResultList.SetSelectable(false, false)
-	s.SearchBar.Clear(true)
-	s.ResetSearchBar()
-	s.IsResetted = true
+	//s.SearchBar.Clear(true)
+	//s.InitSearchBar()
 	s.App.Draw()
 	s.App.SetFocus(s.SearchBar)
 }
@@ -373,7 +284,7 @@ func (s *Search) DelegateAction(event *tcell.EventKey) *tcell.EventKey {
 	// get current row
 	s.SetCurrentRowIndex(DIRECTION_NONE)
 	log.Debugf("current row %d", s.CurrentRowIndex)
-	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
+	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
 		log.Errorf("minidoc from failed: %v", err)
 		return nil
@@ -399,7 +310,7 @@ func (s *Search) LoadPreview(direction int) {
 	s.SetCurrentRowIndex(direction)
 
 	log.Debugf("current row %d", s.CurrentRowIndex)
-	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
+	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
 		log.Errorf("minidoc from failed: %v", err)
 		return
@@ -443,7 +354,7 @@ func (s *Search) LoadPreview(direction int) {
 func (s *Search) LoadEdit() {
 	s.ResultList.SetSelectable(false, false)
 
-	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
+	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
 		log.Debugf("error getting json from curr row: %v", err)
 		return
@@ -467,7 +378,7 @@ func (s *Search) DeleteSelectedRows() {
 func (s *Search) BatchDelete() {
 	for i := 0; i < s.ResultList.GetRowCount(); i++ {
 		log.Debugf("current row %d", s.CurrentRowIndex)
-		doc, err := s.GetMiniDocFromRow(i)
+		doc, err := s.LoadMiniDocFromDB(i)
 		if err != nil {
 			log.Errorf("minidoc from failed: %v", err)
 			return
@@ -491,7 +402,7 @@ func (s *Search) BatchDelete() {
 
 func (s *Search) SelectRecordForCurrentRow() {
 	log.Debugf("current row %d", s.CurrentRowIndex)
-	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
+	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
 		log.Errorf("minidoc from failed: %v", err)
 		return
@@ -508,7 +419,7 @@ func (s *Search) SelectRecordForCurrentRow() {
 
 func (s *Search) ToggleRecordForCurrentRow() {
 	log.Debugf("current row %d", s.CurrentRowIndex)
-	doc, err := s.GetMiniDocFromRow(s.CurrentRowIndex)
+	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
 		log.Errorf("minidoc from failed: %v", err)
 		return
@@ -534,70 +445,9 @@ func (s *Search) DeleteFunc(doc MiniDoc) error {
 	return err
 }
 
-func (s *Search) GetMiniDocFromRow(rowIndex int) (MiniDoc, error) {
-	ref := s.ResultList.GetCell(rowIndex, idColumnIndex).GetReference()
-	id, ok := ref.(uint32)
-	if !ok {
-		msg := fmt.Sprintf("ref for row index[%d] id column not uint32 but is %v", rowIndex, reflect.TypeOf(ref))
-		log.Errorf(msg)
-		return nil, fmt.Errorf(msg)
-	}
-
-	ref = s.ResultList.GetCell(rowIndex, typeColumnIndex).GetReference()
-	doctype, ok := ref.(string)
-	if !ok {
-		msg := fmt.Sprintf("ref for row index[%d] type column not string but is %v", rowIndex, reflect.TypeOf(ref))
-		log.Errorf(msg)
-		return nil, fmt.Errorf(msg)
-	}
-
-	ref = s.ResultList.GetCell(rowIndex, fragmentsColumnIndex).GetReference()
-	fragments, ok := ref.(string)
-	if !ok {
-		msg := fmt.Sprintf("ref for row index[%d] type column not string but is %v", rowIndex, reflect.TypeOf(ref))
-		log.Errorf(msg)
-		return nil, fmt.Errorf(msg)
-	}
-	log.Debugf("read fragments from current row %s", fragments)
-
-	ref = s.ResultList.GetCell(rowIndex, selectedColumnIndex).GetReference()
-	isSelected, ok := ref.(bool)
-	if !ok {
-		msg := fmt.Sprintf("ref for row index[%d] type column not bool but is %v", rowIndex, reflect.TypeOf(ref))
-		log.Errorf(msg)
-		return nil, fmt.Errorf(msg)
-	}
-
-	doc, err := s.App.BucketHandler.Read(id, doctype)
-	if err != nil {
-		log.Debugf("read error: %v", err)
-		return nil, err
-	}
-
-	// json unmarshaller will exclude empty value fields
-	// jh.set("fragments", fragments) will throw error
-	// make sure we return minido
-	doc.SetIsSelected(isSelected)
-	doc.SetSearchFragments(fragments)
-	return doc, nil
+func (s *Search) LoadMiniDocFromDB(rowIndex int) (MiniDoc, error) {
+	return s.ResultList.LoadMiniDocFromDB(rowIndex)
 }
-
-//type RefHandler struct{
-//	err error
-//}
-//
-//func NewRefHandler() *RefHandler {
-//	return &RefHandler{}
-//}
-//
-//func (rh *RefHandler) uint32(ref interface{}) uint32 {
-//	v, ok := ref.(uint32)
-//	if !ok {
-//		rh.err = fmt.Errorf(fmt.Sprintf("uint32 is expected but got %v", reflect.TypeOf(ref)))
-//		log.Errorf()
-//	}
-//	return v
-//}
 
 func (s *Search) UnLoadEdit() {
 	s.GoToSearchResult()
