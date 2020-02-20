@@ -39,7 +39,6 @@ func (m *URLDoc) HandleEvent(event *tcell.EventKey) {
 			}
 		}
 	}
-
 }
 
 func (M *URLDoc) GetAvailableActions() string {
@@ -47,7 +46,7 @@ func (M *URLDoc) GetAvailableActions() string {
 }
 
 func (m *URLDoc) GetMarkdown() string {
-	return fmt.Sprintf(`[%s](%s)`, m.Title, m.URL)
+	return fmt.Sprintf(`link: [%s](%s)`, m.Title, m.URL)
 }
 
 func (u *URLDoc) GetDisplayFields() []string {
@@ -61,6 +60,10 @@ func (u *URLDoc) GetDisplayFields() []string {
 		"tags",
 		"created_date",
 	}
+}
+
+func (m *URLDoc) GetViEditFields() []string {
+	return []string{"description"}
 }
 
 // --------------------------------------------------------------------------------
@@ -85,8 +88,13 @@ func (n *NoteDoc) GetDisplayFields() []string {
 	}
 }
 
-func (m *NoteDoc) GetViEditFields() []string {
+func (n *NoteDoc) GetViEditFields() []string {
 	return []string{"note"}
+}
+
+func (n *NoteDoc) GetMarkdown() string {
+	return fmt.Sprintf(`###%s
+  %s`, n.Title, n.Note)
 }
 
 // --------------------------------------------------------------------------------
@@ -97,11 +105,11 @@ type ToDoDoc struct {
 	Done bool   `json:"done"`
 }
 
-func (n *ToDoDoc) GetJSON() interface{} {
-	return Jsonize(n)
+func (d *ToDoDoc) GetJSON() interface{} {
+	return Jsonize(d)
 }
 
-func (n *ToDoDoc) GetDisplayFields() []string {
+func (d *ToDoDoc) GetDisplayFields() []string {
 	return []string{
 		"id",
 		"type",
@@ -110,4 +118,30 @@ func (n *ToDoDoc) GetDisplayFields() []string {
 		"tags",
 		"created_date",
 	}
+}
+
+func (d *ToDoDoc) HandleEvent(event *tcell.EventKey) {
+	eventKey := event.Key()
+
+	switch eventKey {
+	case tcell.KeyRune:
+		switch event.Rune() {
+		case 'd':
+			log.Debugf("marking %s as done or undone")
+			if d.Done {
+				d.Done = false
+			} else {
+				d.Done = true
+			}
+		}
+	}
+}
+
+func (d *ToDoDoc) GetAvailableActions() string {
+	return "[yellow]d[white] <= mark task as done or undone"
+}
+
+func (d *ToDoDoc) GetMarkdown() string {
+	return fmt.Sprintf(`###%s
+  %s`, d.Task)
 }

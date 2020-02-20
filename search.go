@@ -2,12 +2,8 @@ package minidoc
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"os/exec"
 	"reflect"
 	"strings"
-	"syscall"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -71,6 +67,8 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	return "Search", s.Layout
 }
 
+var words = []string{"@new", "@generate"}
+
 func (s *Search) ResetSearchBar() {
 	log.Debug("resetting search bar")
 	s.SearchBar.AddInputField("", "", 0, nil, nil)
@@ -81,8 +79,17 @@ func (s *Search) ResetSearchBar() {
 	if ok {
 		input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 
+			text := input.GetText()
+			var terms []string
+			if len(text) > 0 {
+				terms = strings.Split(text, " ")
+			}
 			if event.Key() == tcell.KeyEnter {
-				done := s.ShowSearchResult(input.GetText())
+				// if term0 starts with @ and terms length is 1 then disregard enter
+				if strings.HasPrefix(terms[0], "@") && len(terms) == 1 {
+					return event
+				}
+				done := s.ShowSearchResult(text)
 				if done {
 					return nil
 				}
@@ -94,12 +101,29 @@ func (s *Search) ResetSearchBar() {
 			}
 
 			if event.Key() == tcell.KeyTab {
+				if strings.HasPrefix(terms[0], "@") && len(terms) == 1 {
+					return event
+				}
 				log.Debug("tab pressed from search bar")
 				s.GoToSearchResult()
 				return nil
 			}
 
 			return event
+		})
+		input.SetAutocompleteFunc(func(currentText string) (entries []string) {
+			if len(currentText) == 0 {
+				return
+			}
+			for _, word := range words {
+				if strings.HasPrefix(strings.ToLower(word), strings.ToLower(currentText)) {
+					entries = append(entries, word)
+				}
+			}
+			if len(entries) <= 1 {
+				entries = nil
+			}
+			return
 		})
 	}
 }
@@ -174,6 +198,7 @@ func (s *Search) HandleCommand(command string) {
 	case "generate":
 		outputDoctype := terms[1]
 		if outputDoctype == "markdown" {
+			filepath := terms[2]
 			markdown := ""
 			for i := 0; i < s.ResultList.GetRowCount(); i++ {
 				log.Debugf("current row %d", s.CurrentRowIndex)
@@ -190,107 +215,14 @@ func (s *Search) HandleCommand(command string) {
 
 				markdown += doc.GetMarkdown() + "\n\n"
 			}
-			if WriteToFile("/tmp/markdown.md", markdown) {
+			if WriteToFile(filepath, markdown) {
 				return
 			}
-			s.App.StatusBar.SetText("[green]opening markdown[white]")
+			OpenVim(s.App, filepath)
+			s.App.StatusBar.SetText("[green]markdown generated[white]")
 
-			OpenVim(s.App, "/tmp/markdown.md")
 		}
 	}
-}
-
-func WriteToFile(filepath, content string) (done bool) {
-	file, err := os.Create(filepath)
-	if err != nil {
-		log.Errorf("creating file: %v", err)
-		return true
-	}
-	_, err = fmt.Fprintf(file, content)
-	if err != nil {
-		log.Errorf("writing content: %v", err)
-		return true
-	}
-	file.Close()
-	return false
-}
-
-func ReadFromFile(filepath string) (string, error) {
-	dat, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		log.Errorf("reading content: %v", err)
-		return "", err
-	}
-
-	return string(dat), nil
-}
-
-// this works perfectly
-func OpenVim(app *SimpleApp, filepath string) {
-	app.Suspend(func() {
-		cmd := exec.Command("vim", filepath)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		err := cmd.Run()
-		if err != nil {
-			log.Errorf("opening vi: %v", err)
-		}
-		log.Debug("returning the control back")
-	})
-}
-
-// works create, all key inputs works, exit the minidoc since this seems to be replace the process
-func (s *Search) openVim(filepath string) {
-	binary, lookErr := exec.LookPath("vim")
-	if lookErr != nil {
-		panic(lookErr)
-	}
-
-	args := []string{"vim", filepath}
-
-	env := os.Environ()
-	execErr := syscall.Exec(binary, args, env)
-	if execErr != nil {
-		panic(execErr)
-	}
-	s.App.Draw()
-}
-
-func (s *Search) openVimForkExec(filepath string) {
-	cmd := "vim"
-	binary, lookErr := exec.LookPath(cmd)
-	if lookErr != nil {
-		panic(lookErr)
-	}
-	//fmt.Println(binary)
-
-	os.Remove("/tmp/stdin")
-	os.Remove("/tmp/stdout")
-	os.Remove("/tmp/stderr")
-
-	fstdin, err1 := os.Create("/tmp/stdin")
-	fstdout, err2 := os.Create("/tmp/stdout")
-	fstderr, err3 := os.Create("/tmp/stderr")
-	if err1 != nil || err2 != nil || err3 != nil {
-		log.Errorf("%v %v %v", err1, err2, err3)
-		panic("WOW")
-	}
-
-	env := os.Environ()
-
-	argv := []string{filepath}
-	procAttr := syscall.ProcAttr{
-		Dir:   "/tmp",
-		Files: []uintptr{fstdin.Fd(), fstdout.Fd(), fstderr.Fd()},
-		Env:   env,
-		Sys: &syscall.SysProcAttr{
-			Foreground: false,
-		},
-	}
-
-	pid, err := syscall.ForkExec(binary, argv, &procAttr)
-	log.Debugf("pid=%d err=%v", pid, err)
-	s.App.Draw()
 }
 
 func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {
@@ -345,8 +277,6 @@ func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tc
 				s.LoadPreview(DOWN)
 			case 'k':
 				s.LoadPreview(UP)
-			case 'd':
-				s.DeleteSelectedRows()
 			case 'e':
 				key, done := s.EditCurrentFieldRowWithVi(event)
 				if done {
@@ -362,10 +292,11 @@ func (s *Search) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tc
 		case tcell.KeyTab:
 			s.GoToSearchBar()
 			return nil
-
 		case tcell.KeyEnter:
 			s.LoadPreview(DIRECTION_NONE)
 			return nil
+		case tcell.KeyCtrlD:
+			s.DeleteSelectedRows()
 		default:
 			return s.DelegateAction(event)
 		}
@@ -471,6 +402,8 @@ func (s *Search) DelegateAction(event *tcell.EventKey) *tcell.EventKey {
 
 	// call doc.HandleEvent(key)
 	doc.HandleEvent(event)
+	s.App.DataHandler.Write(doc)
+	s.LoadPreview(DIRECTION_NONE)
 	// e.g.
 	// call receiver if key o = open for url, if key d = mark done for todo task
 	// return nil

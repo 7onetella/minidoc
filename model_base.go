@@ -97,7 +97,7 @@ func (m *BaseDoc) SetIsSelected(selected bool) {
 
 func (m *BaseDoc) IsSelectedString() string {
 	if m.Selected {
-		return "✓️"
+		return "*️" // let's use ✓️ for todo
 	}
 	return " "
 }
