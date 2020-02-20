@@ -65,7 +65,7 @@ func launchMinidoc() {
 	}
 	os.MkdirAll(minidocHome, os.ModePerm)
 
-	pageItems := []minidoc.PageItem{minidoc.NewSearch()}
+	pageItems := []minidoc.PageItem{minidoc.NewSearch(), minidoc.NewHelp()}
 	options := []minidoc.SimpleAppOption{
 		GetWithSimpleAppDelegateKeyEvent(),
 		minidoc.WithSimpleAppConfirmExit(false),
