@@ -45,12 +45,24 @@ func NewEditorForm(doc MiniDoc) *tview.Form {
 		log.Errorf("doc is nil")
 		return nil
 	}
+mainLoop:
 	for _, fieldName := range doc.GetDisplayFields() {
 		if fieldName == "type" || fieldName == "id" || fieldName == "created_date" {
 			continue
 		}
 
 		fieldtype := jh.fieldtype(fieldName)
+
+		// if vim already populated the field then skip
+		for _, editFieldName := range doc.GetViEditFields() {
+			if editFieldName == fieldName {
+				fieldValue := jh.string(fieldName)
+				if len(fieldValue) > 0 {
+					continue mainLoop
+				}
+			}
+		}
+
 		fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
 		//edit.debug("adding input field for " + fieldNameCleaned)
 		label := fieldNameCleaned + ":"
@@ -111,17 +123,20 @@ func ExtractFieldValues(jh *JSONHandler, f *tview.Form) {
 		}
 
 		fieldtype := jh.fieldtype(fieldName)
-		var v string
 		switch fieldtype {
 		case "string":
 			fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
-			sv := GetInputValue(f, fieldNameCleaned+":")
-			jh.set(fieldName, sv)
+			sptr := GetInputValue(f, fieldNameCleaned+":")
+			if sptr != nil {
+				jh.set(fieldName, *sptr)
+			}
 		case "float64":
 			fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
-			v = GetInputValue(f, fieldNameCleaned+":")
-			fv, _ := strconv.ParseFloat(v, 64)
-			jh.set(fieldName, fv)
+			sptr := GetInputValue(f, fieldNameCleaned+":")
+			if sptr != nil {
+				fv, _ := strconv.ParseFloat(*sptr, 64)
+				jh.set(fieldName, fv)
+			}
 		case "bool":
 			fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
 			bv := GetCheckBoxChecked(f, fieldNameCleaned+":")

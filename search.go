@@ -223,12 +223,7 @@ func (s *Search) UpdateRow(rowIndex int, doc MiniDoc) {
 	s.ResultList.SetColumnCells(rowIndex, cd)
 }
 
-func (s *Search) EditWithVim(event *tcell.EventKey) (*tcell.EventKey, bool) {
-	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
-	if err != nil {
-		log.Debugf("error getting json from curr row: %v", err)
-		return event, true
-	}
+func (s *Search) EditWithVim(doc MiniDoc) MiniDoc {
 	json := Jsonize(doc)
 	jh := NewJSONHandler(json)
 
@@ -246,17 +241,13 @@ func (s *Search) EditWithVim(event *tcell.EventKey) (*tcell.EventKey, bool) {
 		content = strings.TrimSpace(content)
 		jh.set(fieldName, content)
 		log.Debugf("json.description: %s", jh.string(fieldName))
-		doc, err = MiniDocFrom(json)
-		if err != nil {
-			log.Errorf("error converting: %v", err)
-		}
-		err = s.App.DataHandler.Write(doc)
-		if err != nil {
-			log.Errorf("error writing: %v", err)
-		}
 	}
-	s.Preview(DIRECTION_NONE)
-	return nil, false
+	doc, err := MiniDocFrom(json)
+	if err != nil {
+		log.Errorf("error converting: %v", err)
+	}
+
+	return doc
 }
 
 const (

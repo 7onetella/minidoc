@@ -54,10 +54,18 @@ func (rl *ResultList) GetResultListInputCaptureFunc() func(event *tcell.EventKey
 			case 'k':
 				s.Preview(UP)
 			case 'e':
-				key, done := s.EditWithVim(event)
-				if done {
-					return key
+				doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
+				if err != nil {
+					log.Debugf("error getting json from curr row: %v", err)
+					return event
 				}
+				doc = s.EditWithVim(doc)
+				err = s.App.DataHandler.Write(doc)
+				if err != nil {
+					log.Errorf("error writing: %v", err)
+				}
+				s.Preview(DIRECTION_NONE)
+				return nil
 			case ' ':
 				s.ToggleSelected()
 			case 't':

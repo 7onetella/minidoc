@@ -15,25 +15,12 @@ type New struct {
 	BucketHandler *BucketHandler
 }
 
-func NewNewPage(doctype string) *New {
+func NewNewPage(doc MiniDoc) *New {
 	n := &New{
 		Layout: tview.NewFlex(),
 	}
 
-	log.Debug("new doctype: %s", doctype)
-
-	var doc MiniDoc
-	switch doctype {
-	case "url":
-		doc = &URLDoc{}
-		doc.SetType("url")
-	case "note":
-		doc = &NoteDoc{}
-		doc.SetType("note")
-	case "todo":
-		doc = &ToDoDoc{}
-		doc.SetType("todo")
-	}
+	log.Debugf("new doctype: %s", doc.GetType())
 
 	n.Form = NewEditorForm(doc)
 	n.Form.SetBorder(false)

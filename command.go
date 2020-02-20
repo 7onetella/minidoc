@@ -16,7 +16,26 @@ func (s *Search) HandleCommand(command string) {
 	case "new":
 		doctype := terms[1]
 		if !s.App.PagesHandler.HasPage("New") {
-			newPage := NewNewPage(doctype)
+			var doc MiniDoc
+			switch doctype {
+			case "url":
+				doc = &URLDoc{}
+				doc.SetType("url")
+			case "note":
+				doc = &NoteDoc{}
+				doc.SetType("note")
+			case "todo":
+				doc = &ToDoDoc{}
+				doc.SetType("todo")
+			}
+			doc = s.EditWithVim(doc)
+			err := s.App.DataHandler.Write(doc)
+			if err != nil {
+				log.Errorf("error writing: %v", err)
+				return
+			}
+
+			newPage := NewNewPage(doc)
 			s.App.PagesHandler.AddPage(s.App, newPage)
 			s.App.PagesHandler.GotoPageByTitle("New")
 			s.App.SetFocus(newPage.Form)
