@@ -145,3 +145,7 @@ func (d *ToDoDoc) GetMarkdown() string {
 	return fmt.Sprintf(`###%s
   %s`, d.Task)
 }
+
+func (d *ToDoDoc) GetTitle() string {
+	return d.Task
+}

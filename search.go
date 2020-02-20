@@ -67,7 +67,7 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	return "Search", s.Layout
 }
 
-var words = []string{"@new", "@generate"}
+var words = []string{"@new", "@list", "@generate"}
 
 func (s *Search) ResetSearchBar() {
 	log.Debug("resetting search bar")
@@ -86,7 +86,7 @@ func (s *Search) ResetSearchBar() {
 			}
 			if event.Key() == tcell.KeyEnter {
 				// if term0 starts with @ and terms length is 1 then disregard enter
-				if strings.HasPrefix(terms[0], "@") && len(terms) == 1 {
+				if len(terms) == 0 && strings.HasPrefix(terms[0], "@") {
 					return event
 				}
 				done := s.ShowSearchResult(text)
@@ -101,7 +101,7 @@ func (s *Search) ResetSearchBar() {
 			}
 
 			if event.Key() == tcell.KeyTab {
-				if strings.HasPrefix(terms[0], "@") && len(terms) == 1 {
+				if len(terms) == 1 && strings.HasPrefix(terms[0], "@") {
 					return event
 				}
 				log.Debug("tab pressed from search bar")
@@ -151,6 +151,11 @@ func (s *Search) ShowSearchResult(searchby string) bool {
 		return false
 	}
 
+	s.UpdateResultList(result)
+	return false
+}
+
+func (s *Search) UpdateResultList(result []MiniDoc) {
 	s.ResultList.Clear()
 	// doc type
 	s.ResultList.InsertColumn(0)
@@ -176,53 +181,6 @@ func (s *Search) ShowSearchResult(searchby string) bool {
 
 	s.App.SetFocus(s.ResultList)
 	s.App.Draw()
-	return false
-}
-
-func (s *Search) HandleCommand(command string) {
-	command = command[1:]
-	terms := strings.Split(command, " ")
-	verb := terms[0]
-	log.Debugf("command terms %s", terms)
-
-	switch verb {
-	case "new":
-		doctype := terms[1]
-		if !s.App.PagesHandler.HasPage("New") {
-			newPage := NewNewPage(doctype)
-			s.App.PagesHandler.AddPage(s.App, newPage)
-			s.App.PagesHandler.GotoPageByTitle("New")
-			s.App.SetFocus(newPage.Form)
-			defer s.App.Draw()
-		}
-	case "generate":
-		outputDoctype := terms[1]
-		if outputDoctype == "markdown" {
-			filepath := terms[2]
-			markdown := ""
-			for i := 0; i < s.ResultList.GetRowCount(); i++ {
-				log.Debugf("current row %d", s.CurrentRowIndex)
-				doc, err := s.GetMiniDocFromRow(i)
-				if err != nil {
-					log.Errorf("minidoc from failed: %v", err)
-					return
-				}
-
-				if !doc.IsSelected() {
-					log.Debugf("row %d not selected skipping", i)
-					continue
-				}
-
-				markdown += doc.GetMarkdown() + "\n\n"
-			}
-			if WriteToFile(filepath, markdown) {
-				return
-			}
-			OpenVim(s.App, filepath)
-			s.App.StatusBar.SetText("[green]markdown generated[white]")
-
-		}
-	}
 }
 
 func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {

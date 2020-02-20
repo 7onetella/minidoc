@@ -39,6 +39,16 @@ func (h *Help) Page() (title string, content tview.Primitive) {
        Ctrl-E  <-  Clear debug view
        Tab     <-  Switch between various views
 
+    [darkcyan]Search Bar[white]
+
+       Ctrl-U  <-  Delete the entire line.
+	   Ctrl-A  <-  Move to the beginning of the line.
+	   Ctrl-E  <-  Move to the end of the line.
+	   Alt-left, Alt-b   <-  Move left by one word.
+	   Alt-right, Alt-f  <-  Move right by one word.
+	   Ctrl-K  <-  Delete from the cursor to the end of the line.
+	   Ctrl-W  <-  Delete the last word before the cursor.
+
     [darkcyan]Search Result Rows[white]
 
 	   j           <-  Move down
