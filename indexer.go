@@ -45,6 +45,14 @@ func (dh *DataHandler) Write(doc MiniDoc) error {
 	return err
 }
 
+func (dh *DataHandler) Delete(doc MiniDoc) error {
+	err := dh.BucketHandler.Delete(doc)
+	if err != nil {
+		return err
+	}
+	return dh.IndexHandler.Delete(doc)
+}
+
 type IndexHandler struct {
 	debug     func(string)
 	index     bleve.Index

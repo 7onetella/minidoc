@@ -47,36 +47,36 @@ func (rl *ResultList) GetResultListInputCaptureFunc() func(event *tcell.EventKey
 		case tcell.KeyRune:
 			switch event.Rune() {
 			case 'i':
-				s.LoadEdit()
+				s.Edit()
 			case 'j':
 				// if the current mode is edit then remove edit and load detail
-				s.LoadPreview(DOWN)
+				s.Preview(DOWN)
 			case 'k':
-				s.LoadPreview(UP)
+				s.Preview(UP)
 			case 'e':
-				key, done := s.EditCurrentFieldRowWithVi(event)
+				key, done := s.EditWithVim(event)
 				if done {
 					return key
 				}
 			case ' ':
-				s.SelectRecordForCurrentRow()
+				s.ToggleSelected()
 			case 't':
-				s.ToggleRecordForCurrentRow()
-				s.LoadPreview(DIRECTION_NONE)
+				s.ToggleTogglable()
+				s.Preview(DIRECTION_NONE)
 			default:
-				return s.DelegateAction(event)
+				return s.DelegateEventHandlingMiniDoc(event)
 			}
 
 		case tcell.KeyTab:
 			s.GoToSearchBar()
 			return nil
 		case tcell.KeyEnter:
-			s.LoadPreview(DIRECTION_NONE)
+			s.Preview(DIRECTION_NONE)
 			return nil
 		case tcell.KeyCtrlD:
-			s.DeleteSelectedRows()
+			s.BatchDeleteConfirmation()
 		default:
-			return s.DelegateAction(event)
+			return s.DelegateEventHandlingMiniDoc(event)
 		}
 
 		return event

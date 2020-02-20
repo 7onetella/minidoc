@@ -55,7 +55,7 @@ func (h *Help) Page() (title string, content tview.Primitive) {
        k           <-  Move up
        i           <-  Load currently selected row in the edit view
        spacebar    <-  Select row
-       d           <-  Batch delete selected rows
+       Ctrl-D      <-  Batch delete selected rows
        Tab         <-  Go back to search bar
 
 `)

@@ -68,7 +68,7 @@ func (s *Search) InitSearchBar() {
 	item := s.SearchBar.GetFormItem(0)
 	input, ok := item.(*tview.InputField)
 	if ok {
-		input.SetInputCapture(s.GetSearchBarInputCapture(input))
+		input.SetInputCapture(s.InputCapture(input))
 	}
 
 	input.SetAutocompleteFunc(func(currentText string) (entries []string) {
@@ -87,7 +87,7 @@ func (s *Search) InitSearchBar() {
 	})
 }
 
-func (s *Search) GetSearchBarInputCapture(input *tview.InputField) func(event *tcell.EventKey) *tcell.EventKey {
+func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 
 		text := input.GetText()
@@ -100,7 +100,7 @@ func (s *Search) GetSearchBarInputCapture(input *tview.InputField) func(event *t
 			if len(terms) == 0 && strings.HasPrefix(terms[0], "@") {
 				return event
 			}
-			done := s.ShowSearchResult(text)
+			done := s.Search(text)
 			if done {
 				return nil
 			}
@@ -130,7 +130,7 @@ const selectedColumnIndex = 2
 const toggledColumnIndex = 3
 const fragmentsColumnIndex = 4
 
-func (s *Search) ShowSearchResult(searchby string) bool {
+func (s *Search) Search(searchby string) bool {
 	searchTerms := ""
 	if len(searchby) > 0 {
 		searchTerms = searchby
@@ -148,11 +148,11 @@ func (s *Search) ShowSearchResult(searchby string) bool {
 		return false
 	}
 
-	s.UpdateResultList(result)
+	s.UpdateResult(result)
 	return false
 }
 
-func (s *Search) UpdateResultList(result []MiniDoc) {
+func (s *Search) UpdateResult(result []MiniDoc) {
 	s.ResultList.Clear()
 	// doc type
 	s.ResultList.InsertColumns(5)
@@ -160,7 +160,7 @@ func (s *Search) UpdateResultList(result []MiniDoc) {
 	// Display search result
 	for _, doc := range result {
 		s.ResultList.InsertRow(0)
-		s.UpdateSearchResultRow(0, doc)
+		s.UpdateRow(0, doc)
 	}
 
 	s.ResultList.SetSelectable(false, false)
@@ -171,7 +171,7 @@ func (s *Search) UpdateResultList(result []MiniDoc) {
 	s.App.Draw()
 }
 
-func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {
+func (s *Search) UpdateRow(rowIndex int, doc MiniDoc) {
 	log.Debugf("updating row: id=%d row_index=%d minidoc=%v", doc.GetID(), rowIndex, doc)
 	doctype := doc.GetType()
 	doctype = strings.TrimSpace(doctype)
@@ -196,7 +196,7 @@ func (s *Search) UpdateSearchResultRow(rowIndex int, doc MiniDoc) {
 	s.ResultList.SetColumnCells(rowIndex, cd)
 }
 
-func (s *Search) EditCurrentFieldRowWithVi(event *tcell.EventKey) (*tcell.EventKey, bool) {
+func (s *Search) EditWithVim(event *tcell.EventKey) (*tcell.EventKey, bool) {
 	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
 		log.Debugf("error getting json from curr row: %v", err)
@@ -228,7 +228,7 @@ func (s *Search) EditCurrentFieldRowWithVi(event *tcell.EventKey) (*tcell.EventK
 			log.Errorf("error writing: %v", err)
 		}
 	}
-	s.LoadPreview(DIRECTION_NONE)
+	s.Preview(DIRECTION_NONE)
 	return nil, false
 }
 
@@ -238,9 +238,9 @@ const (
 	UP
 )
 
-func (s *Search) SetCurrentRowIndex(direction int) {
+func (s *Search) UpdateCurrRowIndexFromSelectedRow(direction int) {
 	rowIndex, _ := s.ResultList.GetSelection()
-	log.Debugf("SetCurrentRowIndex row index before: %d", rowIndex)
+	log.Debugf("UpdateCurrRowIndexFromSelectedRow row index before: %d", rowIndex)
 	switch direction {
 	case DOWN:
 		if rowIndex < (s.ResultList.GetRowCount() - 1) {
@@ -251,7 +251,7 @@ func (s *Search) SetCurrentRowIndex(direction int) {
 			rowIndex -= 1
 		}
 	}
-	log.Debugf("SetCurrentRowIndex row index: after %d", rowIndex)
+	log.Debugf("UpdateCurrRowIndexFromSelectedRow row index: after %d", rowIndex)
 	s.CurrentRowIndex = rowIndex
 }
 
@@ -265,7 +265,7 @@ func (s *Search) SelectRow(rowIndex int) {
 func (s *Search) GoToSearchResult() {
 	s.App.SetFocus(s.ResultList)
 	s.ResultList.SetSelectable(true, false)
-	s.LoadPreview(DIRECTION_NONE)
+	s.Preview(DIRECTION_NONE)
 	s.App.Draw()
 }
 
@@ -277,12 +277,12 @@ func (s *Search) GoToSearchBar() {
 	s.App.SetFocus(s.SearchBar)
 }
 
-func (s *Search) DelegateAction(event *tcell.EventKey) *tcell.EventKey {
+func (s *Search) DelegateEventHandlingMiniDoc(event *tcell.EventKey) *tcell.EventKey {
 
 	// in search result
 
 	// get current row
-	s.SetCurrentRowIndex(DIRECTION_NONE)
+	s.UpdateCurrRowIndexFromSelectedRow(DIRECTION_NONE)
 	log.Debugf("current row %d", s.CurrentRowIndex)
 	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
@@ -290,24 +290,26 @@ func (s *Search) DelegateAction(event *tcell.EventKey) *tcell.EventKey {
 		return nil
 	}
 
+	// so far open browser for url
 	doc.HandleEvent(event)
+
+	// write any change from event handling
 	s.App.DataHandler.Write(doc)
-	s.LoadPreview(DIRECTION_NONE)
-	// e.g.
-	// call receiver if key o = open for url, if key d = mark done for todo task
-	// return nil
+
+	// update the view
+	s.Preview(DIRECTION_NONE)
 
 	return nil
 }
 
-func (s *Search) LoadPreview(direction int) {
+func (s *Search) Preview(direction int) {
 	if s.IsEditMode {
 		s.Columns.RemoveItem(s.EditForm)
 		s.Columns.AddItem(s.Detail, 0, 5, true)
 		s.IsEditMode = false
 	}
 
-	s.SetCurrentRowIndex(direction)
+	s.UpdateCurrRowIndexFromSelectedRow(direction)
 
 	log.Debugf("current row %d", s.CurrentRowIndex)
 	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
@@ -351,7 +353,7 @@ func (s *Search) LoadPreview(direction int) {
 	fmt.Fprintf(s.Detail, "%s", content)
 }
 
-func (s *Search) LoadEdit() {
+func (s *Search) Edit() {
 	s.ResultList.SetSelectable(false, false)
 
 	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
@@ -371,11 +373,11 @@ func (s *Search) LoadEdit() {
 	s.App.Draw()
 }
 
-func (s *Search) DeleteSelectedRows() {
-	ConfirmationModal(s.App, "Batch delete selected rows?", s.BatchDelete)
+func (s *Search) BatchDeleteConfirmation() {
+	ConfirmationModal(s.App, "Batch delete selected rows?", s.BatchDeleteActionFunc)
 }
 
-func (s *Search) BatchDelete() {
+func (s *Search) BatchDeleteActionFunc() {
 	for i := 0; i < s.ResultList.GetRowCount(); i++ {
 		log.Debugf("current row %d", s.CurrentRowIndex)
 		doc, err := s.LoadMiniDocFromDB(i)
@@ -390,7 +392,7 @@ func (s *Search) BatchDelete() {
 		}
 
 		log.Debugf("deleting %v", doc)
-		s.DeleteFunc(doc)
+		s.App.DataHandler.Delete(doc)
 		if err != nil {
 			log.Errorf("deleting %v failed: %v", doc, err)
 			return
@@ -400,7 +402,7 @@ func (s *Search) BatchDelete() {
 	}
 }
 
-func (s *Search) SelectRecordForCurrentRow() {
+func (s *Search) ToggleSelected() {
 	log.Debugf("current row %d", s.CurrentRowIndex)
 	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
@@ -414,10 +416,10 @@ func (s *Search) SelectRecordForCurrentRow() {
 		doc.SetIsSelected(true)
 	}
 
-	s.UpdateSearchResultRow(s.CurrentRowIndex, doc)
+	s.UpdateRow(s.CurrentRowIndex, doc)
 }
 
-func (s *Search) ToggleRecordForCurrentRow() {
+func (s *Search) ToggleTogglable() {
 	log.Debugf("current row %d", s.CurrentRowIndex)
 	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
 	if err != nil {
@@ -433,16 +435,7 @@ func (s *Search) ToggleRecordForCurrentRow() {
 
 	s.App.DataHandler.Write(doc)
 
-	s.UpdateSearchResultRow(s.CurrentRowIndex, doc)
-}
-
-func (s *Search) DeleteFunc(doc MiniDoc) error {
-	err := s.App.BucketHandler.Delete(doc)
-	if err != nil {
-		return err
-	}
-	err = s.App.IndexHandler.Delete(doc)
-	return err
+	s.UpdateRow(s.CurrentRowIndex, doc)
 }
 
 func (s *Search) LoadMiniDocFromDB(rowIndex int) (MiniDoc, error) {
@@ -451,5 +444,5 @@ func (s *Search) LoadMiniDocFromDB(rowIndex int) (MiniDoc, error) {
 
 func (s *Search) UnLoadEdit() {
 	s.GoToSearchResult()
-	s.LoadPreview(DIRECTION_NONE)
+	s.Preview(DIRECTION_NONE)
 }

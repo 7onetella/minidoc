@@ -42,7 +42,7 @@ func (m *URLDoc) HandleEvent(event *tcell.EventKey) {
 }
 
 func (M *URLDoc) GetAvailableActions() string {
-	return "[yellow]o[white] <= open url in browser"
+	return "[yellow]o[white] <= open url in browser | [yellow]t[white] toggle watch later"
 }
 
 func (m *URLDoc) GetMarkdown() string {
@@ -148,7 +148,7 @@ func (d *ToDoDoc) HandleEvent(event *tcell.EventKey) {
 }
 
 func (d *ToDoDoc) GetAvailableActions() string {
-	return "[yellow]d[white] <= mark task as done or undone"
+	return "[yellow]t[white] <= toggle done"
 }
 
 func (d *ToDoDoc) GetMarkdown() string {

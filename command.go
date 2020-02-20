@@ -63,7 +63,7 @@ func (s *Search) HandleCommand(command string) {
 			result[i] = doc
 		}
 
-		s.UpdateResultList(result)
+		s.UpdateResult(result)
 		s.ResultList.ScrollToBeginning()
 		s.SelectRow(0)
 		s.App.SetFocus(s.SearchBar)
