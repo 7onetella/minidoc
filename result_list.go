@@ -5,6 +5,7 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"reflect"
+	"strings"
 )
 
 type ResultList struct {
@@ -75,6 +76,12 @@ func (rl *ResultList) GetResultListInputCaptureFunc() func(event *tcell.EventKey
 				return s.DelegateEventHandlingMiniDoc(event)
 			}
 
+		case tcell.KeyCtrlK:
+			rl.MoveRow(UP)
+			return nil
+		case tcell.KeyCtrlJ:
+			rl.MoveRow(DOWN)
+			return nil
 		case tcell.KeyTab:
 			s.GoToSearchBar()
 			return nil
@@ -177,4 +184,53 @@ func (rl *ResultList) LoadMiniDocFromDB(rowIndex int) (MiniDoc, error) {
 	doc.SetSearchFragments(fragments)
 
 	return doc, nil
+}
+
+func (rl *ResultList) UpdateRow(row int, doc MiniDoc) {
+	doctype := doc.GetType()
+	doctype = strings.TrimSpace(doctype)
+	fragments := doc.GetSearchFragments()
+	selected := doc.IsSelected()
+
+	if doc.IsTogglable() {
+		// swap it out with the the one from db
+		docFromDB, _ := rl.Search.App.DataHandler.BucketHandler.Read(doc.GetID(), doc.GetType())
+		doc = docFromDB
+		doc.SetSearchFragments(fragments)
+		doc.SetIsSelected(selected)
+	}
+
+	cd := []CellData{
+		CellData{doctype, doc.GetIDString()},
+		CellData{doc.GetID(), ""},
+		CellData{doc.IsSelected(), doc.IsSelectedString()},
+		CellData{doc.GetToggle(), doc.GetToggleValueAsString()},
+		CellData{fragments + cellpadding, fragments + cellpadding},
+	}
+	rl.SetColumnCells(row, cd)
+}
+
+func (rl *ResultList) MoveRow(direction int) {
+	prevRow := rl.Search.CurrentRowIndex
+	doc, err := rl.Search.LoadMiniDocFromDB(rl.Search.CurrentRowIndex)
+	if err != nil {
+		log.Debugf("error getting json from curr row: %v", err)
+		return
+	}
+
+	rl.Search.UpdateCurrRowIndexFromSelectedRow(direction)
+	row := rl.Search.CurrentRowIndex
+
+	switch direction {
+	case UP:
+		rl.InsertRow(row)
+		rl.UpdateRow(row, doc)
+		rl.RemoveRow(prevRow + 1)
+		rl.Search.SelectRow(row)
+	case DOWN:
+		rl.InsertRow(row + 1)
+		rl.UpdateRow(row+1, doc)
+		rl.RemoveRow(prevRow)
+		rl.Search.SelectRow(row)
+	}
 }

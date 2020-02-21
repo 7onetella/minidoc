@@ -104,7 +104,7 @@ func (n *NoteDoc) GetViEditFields() []string {
 }
 
 func (n *NoteDoc) GetMarkdown() string {
-	return fmt.Sprintf(`### %s
+	return fmt.Sprintf(`## %s
 %s
 %s
 %s`, n.Title, "```", n.Note, "```")

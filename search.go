@@ -188,7 +188,7 @@ func (s *Search) UpdateResult(result []MiniDoc) {
 	// Display search result
 	for _, doc := range result {
 		s.ResultList.InsertRow(0)
-		s.UpdateRow(0, doc)
+		s.ResultList.UpdateRow(0, doc)
 	}
 
 	s.ResultList.SetSelectable(false, false)
@@ -197,30 +197,6 @@ func (s *Search) UpdateResult(result []MiniDoc) {
 
 	s.App.SetFocus(s.ResultList)
 	s.App.Draw()
-}
-
-func (s *Search) UpdateRow(rowIndex int, doc MiniDoc) {
-	doctype := doc.GetType()
-	doctype = strings.TrimSpace(doctype)
-	fragments := doc.GetSearchFragments()
-	selected := doc.IsSelected()
-
-	if doc.IsTogglable() {
-		// swap it out with the the one from db
-		docFromDB, _ := s.App.DataHandler.BucketHandler.Read(doc.GetID(), doc.GetType())
-		doc = docFromDB
-		doc.SetSearchFragments(fragments)
-		doc.SetIsSelected(selected)
-	}
-
-	cd := []CellData{
-		CellData{doctype, doc.GetIDString()},
-		CellData{doc.GetID(), ""},
-		CellData{doc.IsSelected(), doc.IsSelectedString()},
-		CellData{doc.GetToggle(), doc.GetToggleValueAsString()},
-		CellData{fragments + cellpadding, fragments + cellpadding},
-	}
-	s.ResultList.SetColumnCells(rowIndex, cd)
 }
 
 func EditWithVim(app *SimpleApp, doc MiniDoc) MiniDoc {
@@ -273,9 +249,9 @@ func (s *Search) UpdateCurrRowIndexFromSelectedRow(direction int) {
 	s.CurrentRowIndex = rowIndex
 }
 
-func (s *Search) SelectRow(rowIndex int) {
-	if rowIndex == 0 || rowIndex < s.ResultList.GetRowCount() {
-		s.CurrentRowIndex = rowIndex
+func (s *Search) SelectRow(row int) {
+	if row == 0 || row < s.ResultList.GetRowCount() {
+		s.CurrentRowIndex = row
 		s.ResultList.Select(s.CurrentRowIndex, 0)
 	}
 }
@@ -434,7 +410,7 @@ func (s *Search) ToggleSelected() {
 		doc.SetIsSelected(true)
 	}
 
-	s.UpdateRow(s.CurrentRowIndex, doc)
+	s.ResultList.UpdateRow(s.CurrentRowIndex, doc)
 }
 
 func (s *Search) ToggleTogglable() {
@@ -453,11 +429,11 @@ func (s *Search) ToggleTogglable() {
 
 	s.App.DataHandler.Write(doc)
 
-	s.UpdateRow(s.CurrentRowIndex, doc)
+	s.ResultList.UpdateRow(s.CurrentRowIndex, doc)
 }
 
-func (s *Search) LoadMiniDocFromDB(rowIndex int) (MiniDoc, error) {
-	return s.ResultList.LoadMiniDocFromDB(rowIndex)
+func (s *Search) LoadMiniDocFromDB(row int) (MiniDoc, error) {
+	return s.ResultList.LoadMiniDocFromDB(row)
 }
 
 func (s *Search) UnLoadEdit() {
