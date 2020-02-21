@@ -60,7 +60,7 @@ func (rl *ResultList) GetResultListInputCaptureFunc() func(event *tcell.EventKey
 					return event
 				}
 				doc = s.EditWithVim(doc)
-				err = s.App.DataHandler.Write(doc)
+				_, err = s.App.DataHandler.Write(doc)
 				if err != nil {
 					log.Errorf("error writing: %v", err)
 				}

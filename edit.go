@@ -76,13 +76,8 @@ mainLoop:
 	return f
 }
 
-func (e *Edit) Update(doc MiniDoc) error {
-	_, err := e.Search.App.BucketHandler.Write(doc)
-	if err != nil {
-		return err
-	}
-	err = e.Search.App.IndexHandler.Index(doc)
-	return err
+func (e *Edit) Update(doc MiniDoc) (uint32, error) {
+	return e.Search.App.DataHandler.Write(doc)
 }
 
 func (e *Edit) Delete(doc MiniDoc) error {
@@ -107,7 +102,7 @@ func (e *Edit) UpdateAction() {
 	}
 	log.Debugf("minidoc from json: %v", e.json)
 
-	err = e.Update(doc)
+	_, err = e.Update(doc)
 	if err != nil {
 		log.Errorf("updating %v failed: %v", doc, err)
 		return

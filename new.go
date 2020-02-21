@@ -72,12 +72,7 @@ func (n *New) CreateAction() {
 }
 
 func (n *New) Save(doc MiniDoc) (uint32, error) {
-	id, err := n.App.BucketHandler.Write(doc)
-	if err != nil {
-		return 0, err
-	}
-	err = n.App.IndexHandler.Index(doc)
-	return id, err
+	return n.App.DataHandler.Write(doc)
 }
 
 func (n *New) Reset() {

@@ -36,13 +36,13 @@ type DataHandler struct {
 	IndexHandler  *IndexHandler
 }
 
-func (dh *DataHandler) Write(doc MiniDoc) error {
-	_, err := dh.BucketHandler.Write(doc)
+func (dh *DataHandler) Write(doc MiniDoc) (uint32, error) {
+	id, err := dh.BucketHandler.Write(doc)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	err = dh.IndexHandler.Index(doc)
-	return err
+	return id, err
 }
 
 func (dh *DataHandler) Delete(doc MiniDoc) error {

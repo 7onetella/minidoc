@@ -29,11 +29,12 @@ func (s *Search) HandleCommand(command string) {
 				doc.SetType("todo")
 			}
 			doc = s.EditWithVim(doc)
-			err := s.App.DataHandler.Write(doc)
+			id, err := s.App.DataHandler.Write(doc)
 			if err != nil {
 				log.Errorf("error writing: %v", err)
 				return
 			}
+			doc.SetID(id)
 
 			newPage := NewNewPage(doc)
 			s.App.PagesHandler.AddPage(s.App, newPage)
