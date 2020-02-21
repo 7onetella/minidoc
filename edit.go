@@ -14,7 +14,7 @@ type Edit struct {
 }
 
 func NewEdit(s *Search, doc MiniDoc) *Edit {
-	json := Jsonize(doc)
+	json := JsonMap(doc)
 
 	edit := &Edit{
 		Search: s,
@@ -38,7 +38,7 @@ func NewEdit(s *Search, doc MiniDoc) *Edit {
 func NewEditorForm(doc MiniDoc) *tview.Form {
 	f := tview.NewForm()
 
-	json := Jsonize(doc)
+	json := JsonMap(doc)
 	jh := NewJSONHandler(json)
 	f.SetTitle(jh.string("type") + ":" + jh.string("id"))
 	if doc == nil {

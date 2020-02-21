@@ -85,7 +85,7 @@ func (m *BaseDoc) SetSearchFragments(fragments string) {
 }
 
 func (m *BaseDoc) GetJSON() interface{} {
-	return Jsonize(m)
+	return JsonMap(m)
 }
 
 func (m *BaseDoc) SetCreatedDate(createdDate string) {

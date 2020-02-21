@@ -224,7 +224,7 @@ func (s *Search) UpdateRow(rowIndex int, doc MiniDoc) {
 }
 
 func (s *Search) EditWithVim(doc MiniDoc) MiniDoc {
-	json := Jsonize(doc)
+	json := JsonMap(doc)
 	jh := NewJSONHandler(json)
 
 	for _, fieldName := range doc.GetViEditFields() {
@@ -340,7 +340,7 @@ func (s *Search) Preview(direction int) {
 	// result list select only makes sense for shifting the focus over and selecting
 	s.App.StatusBar.SetText(fmt.Sprintf("%d | %s", s.CurrentRowIndex, doc.GetAvailableActions()))
 
-	json := Jsonize(doc)
+	json := JsonMap(doc)
 	jh := NewJSONHandler(json)
 
 	content := ""

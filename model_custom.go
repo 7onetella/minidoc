@@ -21,7 +21,7 @@ type URLDoc struct {
 }
 
 func (u *URLDoc) GetJSON() interface{} {
-	return Jsonize(u)
+	return JsonMap(u)
 }
 
 func (m *URLDoc) HandleEvent(event *tcell.EventKey) {
@@ -85,7 +85,7 @@ type NoteDoc struct {
 }
 
 func (n *NoteDoc) GetJSON() interface{} {
-	return Jsonize(n)
+	return JsonMap(n)
 }
 
 func (n *NoteDoc) GetDisplayFields() []string {
@@ -117,7 +117,7 @@ type ToDoDoc struct {
 }
 
 func (d *ToDoDoc) GetJSON() interface{} {
-	return Jsonize(d)
+	return JsonMap(d)
 }
 
 func (d *ToDoDoc) GetDisplayFields() []string {

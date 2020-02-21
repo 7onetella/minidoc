@@ -113,20 +113,20 @@ func (j *JSONHandler) fieldtype(property string) string {
 	return ""
 }
 
-func Jsonize(d interface{}) interface{} {
-	jsonBytes, err := json.Marshal(d)
+func JsonMap(doc MiniDoc) interface{} {
+	jsonBytes, err := json.Marshal(doc)
 	if err != nil {
-		log.Errorf("marshaling to bytes d=%v", d)
+		log.Errorf("marshaling to bytes minidoc=%v", doc)
 		return nil
 	}
 
-	var jsonDoc interface{}
-	err = json.Unmarshal(jsonBytes, &jsonDoc)
+	var jsonMap interface{}
+	err = json.Unmarshal(jsonBytes, &jsonMap)
 	if err != nil {
 		log.Errorf("unmarshaling: %v", err)
 		return nil
 	}
-	return jsonDoc
+	return jsonMap
 }
 
 func MiniDocFrom(jsonMap interface{}) (MiniDoc, error) {

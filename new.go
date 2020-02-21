@@ -26,9 +26,7 @@ func NewNewPage(doc MiniDoc) *New {
 	n.Form.SetBorder(false)
 	n.Form.AddButton("Create", n.CreateAction)
 	n.Form.AddButton("Cancel", n.CancelAction)
-	var json interface{}
-	json = Jsonize(doc)
-	n.json = json
+	n.json = JsonMap(doc)
 
 	return n
 }
