@@ -71,18 +71,13 @@ func (s *Search) HandleCommand(command string) {
 		}
 	case "list":
 		doctype := terms[1]
-		jsons, err := s.App.DataHandler.BucketHandler.ReadAll(doctype)
+		docs, err := s.App.DataHandler.BucketHandler.ReadAll(doctype)
 		if err != nil {
 			log.Errorf("error reading docs by type: %v", err)
 			return
 		}
-		result := make([]MiniDoc, len(jsons))
-		for i, json := range jsons {
-			doc, err := MiniDocFrom(json)
-			if err != nil {
-				log.Errorf("error converting json to minidoc: %v", err)
-				return
-			}
+		result := make([]MiniDoc, len(docs))
+		for i, doc := range docs {
 			doc.SetSearchFragments(doc.GetTitle())
 			result[i] = doc
 		}

@@ -86,7 +86,7 @@ func (bh *BucketHandler) Write(doc MiniDoc) (uint32, error) {
 	return toUint32(key), nil
 }
 
-func (bh *BucketHandler) ReadAll(doctype string) ([]interface{}, error) {
+func (bh *BucketHandler) ReadAll(doctype string) ([]MiniDoc, error) {
 	bx, err := buckets.Open(bh.DBPath)
 	if err != nil {
 		log.Errorf("error while opening bucket[%s] at %s: %v", doctype, bh.DBPath, err)
@@ -105,15 +105,20 @@ func (bh *BucketHandler) ReadAll(doctype string) ([]interface{}, error) {
 		return nil, err
 	}
 
-	docs := make([]interface{}, len(items))
+	docs := make([]MiniDoc, len(items))
 	for i, item := range items {
-		var jsonDoc interface{}
-		err = json.Unmarshal(item.Value, &jsonDoc)
+		doc, err := NewDoc(doctype)
+		if err != nil {
+			log.Errorf("instantiating %s", doctype)
+			return nil, err
+		}
+
+		err = json.Unmarshal(item.Value, doc)
 		if err != nil {
 			log.Errorf("error while unmarshalling %s: %v", doctype, err)
 			return nil, err
 		}
-		docs[i] = jsonDoc
+		docs[i] = doc
 	}
 
 	return docs, nil
@@ -144,15 +149,19 @@ func (bh *BucketHandler) Read(key uint32, doctype string) (MiniDoc, error) {
 		return nil, fmt.Errorf(msg)
 	}
 
-	var jsonDoc interface{}
-	err = json.Unmarshal(data, &jsonDoc)
+	doc, err := NewDoc(doctype)
+	if err != nil {
+		log.Errorf("instantiating %s", doctype)
+		return nil, err
+	}
+
+	err = json.Unmarshal(data, doc)
 	if err != nil {
 		log.Errorf("error while unmarshalling in bucket[%s] with key[%d]: %v", doctype, key, err)
 		return nil, err
 	}
 
-	return MiniDocFrom(jsonDoc)
-	//return jsonDoc, nil
+	return doc, nil
 }
 
 func (bh *BucketHandler) Delete(doc MiniDoc) error {

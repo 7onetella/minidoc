@@ -135,15 +135,10 @@ func Reindex(ih *IndexHandler, db *BucketHandler) {
 	for _, bucket := range buckets {
 		docs, _ := db.ReadAll(bucket)
 		ih.debug(bucket + ":retrieved:" + strconv.Itoa(len(docs)))
-		for _, json := range docs {
-			minidoc, err := MiniDocFrom(json)
+		for _, doc := range docs {
+			err := ih.Index(doc)
 			if err != nil {
-				log.Errorf("minidoc from %v failed: %v", json, err)
-				return
-			}
-			err = ih.Index(minidoc)
-			if err != nil {
-				log.Errorf("indexing %v failed: %v", minidoc, err)
+				log.Errorf("indexing %v failed: %v", doc, err)
 				return
 			}
 		}
