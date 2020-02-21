@@ -129,57 +129,41 @@ func Jsonize(d interface{}) interface{} {
 	return jsonDoc
 }
 
-func MiniDocFrom(d interface{}) (MiniDoc, error) {
-	jh := NewJSONHandler(d)
+func MiniDocFrom(jsonMap interface{}) (MiniDoc, error) {
+	jh := NewJSONHandler(jsonMap)
 	doctype := jh.string("type")
-
-	if doctype == "url" {
-		urldoc := &URLDoc{}
-		jsonBytes, err := json.Marshal(d)
-		if err != nil {
-			log.Errorf("marshaling %s json=%v", doctype, d)
-			return nil, err
-		}
-
-		err = json.Unmarshal(jsonBytes, urldoc)
-		if err != nil {
-			log.Errorf("unmarshaling %s json=%v", doctype, d)
-			return nil, err
-		}
-		return urldoc, nil
+	jsonBytes, err := json.Marshal(jsonMap)
+	if err != nil {
+		log.Errorf("marshaling %s json=%v", doctype, jsonMap)
+		return nil, err
 	}
 
-	if doctype == "note" {
-		urldoc := &NoteDoc{}
-		jsonBytes, err := json.Marshal(d)
-		if err != nil {
-			log.Errorf("marshaling %s json=%v", doctype, d)
-			return nil, err
-		}
-
-		err = json.Unmarshal(jsonBytes, urldoc)
-		if err != nil {
-			log.Errorf("unmarshaling %s json=%v", doctype, d)
-			return nil, err
-		}
-		return urldoc, nil
+	doc, err := NewDoc(doctype)
+	if err != nil {
+		log.Errorf("instantiating %s", doctype)
+		return nil, err
 	}
 
-	if doctype == "todo" {
-		doc := &ToDoDoc{}
-		jsonBytes, err := json.Marshal(d)
-		if err != nil {
-			log.Errorf("marshaling %s json=%v", doctype, d)
-			return nil, err
-		}
-
-		err = json.Unmarshal(jsonBytes, doc)
-		if err != nil {
-			log.Errorf("unmarshaling %s json=%v", doctype, d)
-			return nil, err
-		}
-		return doc, nil
+	err = json.Unmarshal(jsonBytes, doc)
+	if err != nil {
+		log.Errorf("unmarshaling %s json=%v", doctype, jsonMap)
+		return nil, err
 	}
 
-	return nil, fmt.Errorf("doctype %s not handled", doctype)
+	return doc, nil
+}
+
+func NewDoc(doctype string) (MiniDoc, error) {
+	var doc MiniDoc
+	switch doctype {
+	case "note":
+		doc = &NoteDoc{}
+	case "url":
+		doc = &URLDoc{}
+	case "todo":
+		doc = &ToDoDoc{}
+	default:
+		return nil, fmt.Errorf("doctype %s not handled", doctype)
+	}
+	return doc, nil
 }

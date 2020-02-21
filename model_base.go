@@ -40,8 +40,8 @@ type BaseDoc struct {
 	Description string `json:"description"`
 	Tags        string `json:"tags"`
 	Fragments   string `json:"fragments"`
-	Selected    bool   `json:"selected"`
-	Toggled     bool   `json:"toggle"`
+	Selected    bool   `json:"-"`
+	Toggled     bool   `json:"-"`
 }
 
 func (m *BaseDoc) GetID() uint32 {
