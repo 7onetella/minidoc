@@ -76,19 +76,6 @@ mainLoop:
 	return f
 }
 
-func (e *Edit) Update(doc MiniDoc) (uint32, error) {
-	return e.Search.App.DataHandler.Write(doc)
-}
-
-func (e *Edit) Delete(doc MiniDoc) error {
-	err := e.Search.App.BucketHandler.Delete(doc)
-	if err != nil {
-		return err
-	}
-	err = e.Search.App.IndexHandler.Delete(doc)
-	return err
-}
-
 func (e *Edit) UpdateAction() {
 	f := e.Form
 	jh := NewJSONHandler(e.json)
@@ -102,7 +89,7 @@ func (e *Edit) UpdateAction() {
 	}
 	log.Debugf("minidoc from json: %v", e.json)
 
-	_, err = e.Update(doc)
+	_, err = e.Search.App.DataHandler.Write(doc)
 	if err != nil {
 		log.Errorf("updating %v failed: %v", doc, err)
 		return
@@ -144,7 +131,7 @@ func ExtractFieldValues(jh *JSONHandler, f *tview.Form) {
 }
 
 func (e *Edit) DeleteAction() {
-	ConfirmDeleteModal(e.Search, e.json, e.Delete)
+	ConfirmDeleteModal(e.Search, e.json, e.Search.App.DataHandler.Delete)
 }
 
 func ConfirmationModal(app *SimpleApp, message string, action func()) {

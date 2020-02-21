@@ -57,7 +57,7 @@ func (n *New) CreateAction() {
 	}
 	log.Debugf("minidoc from json: %v", n.json)
 
-	id, err := n.Save(doc)
+	id, err := n.App.DataHandler.Write(doc)
 	if err != nil {
 		log.Errorf("updating %v failed: %v", doc, err)
 		return
@@ -67,28 +67,6 @@ func (n *New) CreateAction() {
 	n.App.PagesHandler.GotoPageByTitle("Search")
 	n.App.StatusBar.SetText(fmt.Sprintf("[green]%s:%d created[white]", doc.GetType(), id))
 	n.App.Draw()
-}
-
-func (n *New) Save(doc MiniDoc) (uint32, error) {
-	return n.App.DataHandler.Write(doc)
-}
-
-func (n *New) Reset() {
-	f := n.Form
-	f.Clear(true)
-	f = tview.NewForm().AddInputField("Title:", "", 60, nil, nil).
-		AddInputField("Description:", "", 60, nil, nil).
-		AddInputField("Tags:", "", 60, nil, nil)
-
-	//if n.CreateAction != nil {
-	//	f.AddButton("Create", n.CreateAction)
-	//}
-	f.SetBorderPadding(1, 1, 2, 2)
-	f.SetBorder(false)
-	n.Layout.RemoveItem(n.Form)
-
-	n.Form = f
-	n.Layout.AddItem(n.Form, 0, 1, true)
 }
 
 func (n *New) CancelAction() {
