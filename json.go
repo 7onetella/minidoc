@@ -158,10 +158,13 @@ func NewDoc(doctype string) (MiniDoc, error) {
 	switch doctype {
 	case "note":
 		doc = &NoteDoc{}
+		doc.SetType("note")
 	case "url":
 		doc = &URLDoc{}
+		doc.SetType("url")
 	case "todo":
 		doc = &ToDoDoc{}
+		doc.SetType("todo")
 	default:
 		return nil, fmt.Errorf("doctype %s not handled", doctype)
 	}

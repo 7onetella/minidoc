@@ -115,7 +115,7 @@ func (m *BaseDoc) GetMarkdown() string {
 }
 
 func (M *BaseDoc) GetAvailableActions() string {
-	return "nothing really"
+	return "😊"
 }
 
 func (m *BaseDoc) GetDisplayFields() []string {

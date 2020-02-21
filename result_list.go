@@ -59,7 +59,7 @@ func (rl *ResultList) GetResultListInputCaptureFunc() func(event *tcell.EventKey
 					log.Debugf("error getting json from curr row: %v", err)
 					return event
 				}
-				doc = s.EditWithVim(doc)
+				doc = EditWithVim(rl.Search.App, doc)
 				_, err = s.App.DataHandler.Write(doc)
 				if err != nil {
 					log.Errorf("error writing: %v", err)

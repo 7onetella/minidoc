@@ -16,30 +16,9 @@ func (s *Search) HandleCommand(command string) {
 	case "new":
 		doctype := terms[1]
 		if !s.App.PagesHandler.HasPage("New") {
-			var doc MiniDoc
-			switch doctype {
-			case "url":
-				doc = &URLDoc{}
-				doc.SetType("url")
-			case "note":
-				doc = &NoteDoc{}
-				doc.SetType("note")
-			case "todo":
-				doc = &ToDoDoc{}
-				doc.SetType("todo")
-			}
-			doc = s.EditWithVim(doc)
-			id, err := s.App.DataHandler.Write(doc)
-			if err != nil {
-				log.Errorf("error writing: %v", err)
+			if err := NewDocFlow(doctype, s.App); err != nil {
 				return
 			}
-			doc.SetID(id)
-
-			newPage := NewNewPage(doc)
-			s.App.PagesHandler.AddPage(s.App, newPage)
-			s.App.PagesHandler.GotoPageByTitle("New")
-			s.App.SetFocus(newPage.Form)
 			defer s.App.Draw()
 		}
 	case "generate":
@@ -89,4 +68,26 @@ func (s *Search) HandleCommand(command string) {
 
 		s.App.StatusBar.SetText("[green]listing docs by type[white]")
 	}
+}
+
+func NewDocFlow(doctype string, app *SimpleApp) error {
+	doc, err := NewDoc(doctype)
+	if err != nil {
+		log.Errorf("instantiating %s", doctype)
+		return err
+	}
+
+	doc = EditWithVim(app, doc)
+	id, err := app.DataHandler.Write(doc)
+	if err != nil {
+		log.Errorf("error writing: %v", err)
+		return err
+	}
+	doc.SetID(id)
+
+	newPage := NewNewPage(doc)
+	app.PagesHandler.AddPage(app, newPage)
+	app.PagesHandler.GotoPageByTitle("New")
+	app.SetFocus(newPage.Form)
+	return err
 }

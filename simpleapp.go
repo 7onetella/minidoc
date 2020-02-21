@@ -162,6 +162,11 @@ func (app *SimpleApp) GetInputCaptureFunc() func(event *tcell.EventKey) *tcell.E
 			app.ToggleDebug()
 		case tcell.KeyCtrlD:
 			app.GoToDebugView()
+		case tcell.KeyCtrlN:
+			if err := NewDocFlow("note", app); err != nil {
+				return nil
+			}
+			defer app.Draw()
 		case tcell.KeyCtrlC:
 			app.Exit()
 		default:

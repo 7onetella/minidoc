@@ -223,7 +223,7 @@ func (s *Search) UpdateRow(rowIndex int, doc MiniDoc) {
 	s.ResultList.SetColumnCells(rowIndex, cd)
 }
 
-func (s *Search) EditWithVim(doc MiniDoc) MiniDoc {
+func EditWithVim(app *SimpleApp, doc MiniDoc) MiniDoc {
 	json := JsonMap(doc)
 	jh := NewJSONHandler(json)
 
@@ -231,7 +231,7 @@ func (s *Search) EditWithVim(doc MiniDoc) MiniDoc {
 		inputFile := "/tmp/.minidoc_input.tmp"
 		WriteToFile(inputFile, jh.string(fieldName))
 
-		OpenVim(s.App, inputFile)
+		OpenVim(app, inputFile)
 
 		content, err := ReadFromFile(inputFile)
 		log.Debugf("new content from input file: %s", content)

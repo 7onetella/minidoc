@@ -32,6 +32,7 @@ func (h *Help) Page() (title string, content tview.Primitive) {
     [darkcyan]Entire App[white]
 
        Ctrl-C  <-  Exit
+       Ctrl-N  <-  New note
        Ctrl-H  <-  Navigate to left menu item
        Ctrl-L  <-  Navigate to right menu item
        Ctrl-O  <-  Show debug view
