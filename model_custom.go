@@ -42,7 +42,7 @@ func (m *URLDoc) HandleEvent(event *tcell.EventKey) {
 }
 
 func (M *URLDoc) GetAvailableActions() string {
-	return "[yellow]o[white] <= open url in browser | [yellow]t[white] toggle watch later"
+	return "🔗 [yellow]o[white]pen url in browser | [yellow]t[white]oggle watch later"
 }
 
 func (m *URLDoc) GetMarkdown() string {
@@ -109,6 +109,10 @@ func (n *NoteDoc) GetDisplayFields() []string {
 	}
 }
 
+func (M *NoteDoc) GetAvailableActions() string {
+	return "📝"
+}
+
 func (n *NoteDoc) GetEditFields() []string {
 	return []string{
 		"title",
@@ -172,7 +176,7 @@ func (d *ToDoDoc) HandleEvent(event *tcell.EventKey) {
 }
 
 func (d *ToDoDoc) GetAvailableActions() string {
-	return "[yellow]t[white] <= toggle done"
+	return "✓ [yellow]t[white] <= toggle done"
 }
 
 func (d *ToDoDoc) GetMarkdown() string {
