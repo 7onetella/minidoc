@@ -19,6 +19,8 @@ var cfgFile string
 
 var devMode bool
 
+var reindex bool
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "generated code example",
@@ -53,6 +55,8 @@ func init() {
 	// when this action is called directly.
 	flags.BoolVar(&devMode, "dev",false, "development mode")
 
+	flags.BoolVar(&reindex, "reindex",false, "reindex docs")
+
 }
 
 func launchMinidoc() {
@@ -71,6 +75,7 @@ func launchMinidoc() {
 		minidoc.WithSimpleAppConfirmExit(false),
 		minidoc.WithSimpleAppPages(pageItems),
 		minidoc.WithSimpleAppDataFolderPath(minidocHome),
+		minidoc.WithSimpleAppDocsReindexed(reindex),
 	}
 	if devMode {
 		options = append(options, minidoc.WithSimpleAppDebugOn())
