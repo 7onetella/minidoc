@@ -26,6 +26,7 @@ type SimpleApp struct {
 	BucketHandler     *BucketHandler
 	dataFolderPath    string
 	DataHandler       *DataHandler
+	docsReindexed     bool
 }
 
 type SimpleAppOption func(*SimpleApp)
@@ -60,6 +61,12 @@ func WithSimpleAppDataFolderPath(path string) SimpleAppOption {
 	}
 }
 
+func WithSimpleAppDocsReindexed(reindex bool) SimpleAppOption {
+	return func(app *SimpleApp) {
+		app.docsReindexed = reindex
+	}
+}
+
 func NewSimpleApp(opts ...SimpleAppOption) *SimpleApp {
 
 	menu := newTextViewBar()
@@ -89,6 +96,7 @@ func NewSimpleApp(opts ...SimpleAppOption) *SimpleApp {
 		nil,
 		".",
 		nil,
+		false,
 	}
 
 	status.SetText("Ctrl-L for help")
@@ -116,7 +124,9 @@ func NewSimpleApp(opts ...SimpleAppOption) *SimpleApp {
 		app.IndexHandler,
 	}
 
-	Reindex(app.IndexHandler, app.BucketHandler)
+	if app.docsReindexed {
+		Reindex(app.IndexHandler, app.BucketHandler)
+	}
 
 	app.MenuBar.Highlight(strconv.Itoa(0))
 
