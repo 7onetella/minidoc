@@ -66,6 +66,7 @@ func (s *Search) InitSearchBar() {
 	//log.Debug("resetting search bar")
 	s.SearchBar.AddInputField("", "", 0, nil, nil)
 	s.SearchBar.SetBorderPadding(0, 1, 0, 0)
+	s.SearchBar.SetFieldTextColor(tcell.ColorYellow)
 	item := s.SearchBar.GetFormItem(0)
 	input, ok := item.(*tview.InputField)
 	if ok {
@@ -175,11 +176,12 @@ func (s *Search) Search(searchby string) bool {
 		}
 	}
 
-	result := s.App.IndexHandler.Search(searchTerms)
+	result, stat := s.App.IndexHandler.Search(searchTerms)
 	if result == nil {
 		s.debug("result is empty")
 		return false
 	}
+	s.App.StatusBar.SetText(stat)
 
 	s.UpdateResult(result)
 	return false

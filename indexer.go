@@ -92,7 +92,7 @@ func (ih *IndexHandler) Index(doc MiniDoc) error {
 }
 
 // indexCmd will index given csv file
-func (ih *IndexHandler) Search(queryString string) []MiniDoc {
+func (ih *IndexHandler) Search(queryString string) ([]MiniDoc, string) {
 	log.Debug("index search")
 
 	// search for some text
@@ -109,11 +109,9 @@ func (ih *IndexHandler) Search(queryString string) []MiniDoc {
 	sr, err := ih.index.Search(search)
 	if err != nil {
 		log.Errorf("index search error: %v", err)
-		return nil
+		return nil, ""
 	}
 	stat := fmt.Sprintf("%d matches, showing %d through %d, took %s\n", sr.Total, sr.Request.From+1, sr.Request.From+len(sr.Hits), sr.Took)
-	ih.debug(stat)
-	//i.debug(sr.String())
 
 	docs := make([]MiniDoc, sr.Hits.Len())
 	for ri, hit := range sr.Hits {
@@ -154,7 +152,7 @@ func (ih *IndexHandler) Search(queryString string) []MiniDoc {
 		docs[ri] = minidoc
 		log.Debugf("%s %f %s", hit.ID, hit.Score, hit.Fields["title"])
 	}
-	return docs
+	return docs, stat
 }
 
 func IndexMapping() (*mapping.IndexMappingImpl, error) {
