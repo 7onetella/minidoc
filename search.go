@@ -60,7 +60,7 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	return "Search", s.Layout
 }
 
-var words = []string{"@new", "@list", "@generate"}
+var words = []string{"@new", "@list", "@generate", "@tag", "@untag"}
 
 func (s *Search) InitSearchBar() {
 	//log.Debug("resetting search bar")
@@ -234,7 +234,7 @@ const (
 
 func (s *Search) UpdateCurrRowIndexFromSelectedRow(direction int) {
 	rowIndex, _ := s.ResultList.GetSelection()
-	log.Debugf("UpdateCurrRowIndexFromSelectedRow row index before: %d", rowIndex)
+	//log.Debugf("UpdateCurrRowIndexFromSelectedRow row index before: %d", rowIndex)
 	switch direction {
 	case DOWN:
 		if rowIndex < (s.ResultList.GetRowCount() - 1) {
@@ -245,7 +245,7 @@ func (s *Search) UpdateCurrRowIndexFromSelectedRow(direction int) {
 			rowIndex -= 1
 		}
 	}
-	log.Debugf("UpdateCurrRowIndexFromSelectedRow row index: after %d", rowIndex)
+	//log.Debugf("UpdateCurrRowIndexFromSelectedRow row index: after %d", rowIndex)
 	s.CurrentRowIndex = rowIndex
 }
 

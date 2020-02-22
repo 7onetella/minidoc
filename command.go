@@ -67,6 +67,66 @@ func (s *Search) HandleCommand(command string) {
 		s.App.SetFocus(s.SearchBar)
 
 		s.App.StatusBar.SetText("[green]listing docs by type[white]")
+	case "tag":
+		tags := terms[1:]
+		for i := 0; i < s.ResultList.GetRowCount(); i++ {
+			log.Debugf("current row %d", s.CurrentRowIndex)
+			doc, err := s.LoadMiniDocFromDB(i)
+			if err != nil {
+				log.Errorf("minidoc from failed: %v", err)
+				return
+			}
+
+			if !doc.IsSelected() {
+				log.Debugf("row %d not selected skipping", i)
+				continue
+			}
+			dtags := strings.Split(doc.GetTags(), " ")
+			str := ""
+			for _, tag := range tags {
+				if !contains(dtags, tag) {
+					str += " " + tag
+				}
+			}
+			str = strings.Join(dtags, " ") + str
+			doc.SetTags(str)
+			s.App.DataHandler.Write(doc)
+		}
+		s.App.StatusBar.SetText("[green]tagged[white]")
+	case "untag":
+		tags := terms[1:]
+		for i := 0; i < s.ResultList.GetRowCount(); i++ {
+			log.Debugf("current row %d", s.CurrentRowIndex)
+			doc, err := s.LoadMiniDocFromDB(i)
+			if err != nil {
+				log.Errorf("minidoc from failed: %v", err)
+				return
+			}
+
+			if !doc.IsSelected() {
+				log.Debugf("row %d not selected skipping", i)
+				continue
+			}
+
+			dtags := strings.Split(doc.GetTags(), " ")
+			log.Debugf("dtags: %v", dtags)
+			str := ""
+			for _, d := range dtags {
+				if !contains(tags, d) {
+					str += d + " "
+				}
+			}
+			str = strings.TrimSpace(str)
+			log.Debugf("str: [%s]", str)
+			doc.SetTags(str)
+			_, err = s.App.DataHandler.Write(doc)
+			if err != nil {
+				log.Errorf("minidoc write failed: %v", err)
+				return
+			}
+
+		}
+		s.App.StatusBar.SetText("[green]untagged[white]")
 	}
 }
 

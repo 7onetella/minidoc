@@ -100,3 +100,12 @@ func (s *Search) openVimForkExec(filepath string) {
 	log.Debugf("pid=%d err=%v", pid, err)
 	s.App.Draw()
 }
+
+func contains(list []string, s string) bool {
+	for _, e := range list {
+		if e == s {
+			return true
+		}
+	}
+	return false
+}

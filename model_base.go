@@ -14,6 +14,7 @@ type MiniDoc interface {
 	GetTitle() string
 	GetDescription() string
 	GetTags() string
+	SetTags(string)
 	GetSearchFragments() string
 	SetSearchFragments(string)
 	GetJSON() interface{}
@@ -40,7 +41,7 @@ type BaseDoc struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Tags        string `json:"tags"`
-	Fragments   string `json:"fragments"`
+	Fragments   string `json:"-"`
 	Selected    bool   `json:"-"`
 	Toggled     bool   `json:"-"`
 }
@@ -75,6 +76,10 @@ func (m *BaseDoc) GetDescription() string {
 
 func (m *BaseDoc) GetTags() string {
 	return m.Tags
+}
+
+func (m *BaseDoc) SetTags(tags string) {
+	m.Tags = tags
 }
 
 func (m *BaseDoc) GetSearchFragments() string {
