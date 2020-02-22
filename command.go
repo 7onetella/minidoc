@@ -89,6 +89,7 @@ func (s *Search) HandleCommand(command string) {
 				}
 			}
 			str = strings.Join(dtags, " ") + str
+			str = strings.TrimSpace(str)
 			doc.SetTags(str)
 			s.App.DataHandler.Write(doc)
 		}

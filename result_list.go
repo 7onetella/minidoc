@@ -76,11 +76,17 @@ func (rl *ResultList) GetResultListInputCaptureFunc() func(event *tcell.EventKey
 				return s.DelegateEventHandlingMiniDoc(event)
 			}
 
+		case tcell.KeyCtrlA:
+			s.SelectAllRows()
+			return nil
 		case tcell.KeyCtrlK:
 			rl.MoveRow(UP)
 			return nil
 		case tcell.KeyCtrlJ:
 			rl.MoveRow(DOWN)
+			return nil
+		case tcell.KeyCtrlT:
+			s.ToggleAllRows()
 			return nil
 		case tcell.KeyTab:
 			s.GoToSearchBar()

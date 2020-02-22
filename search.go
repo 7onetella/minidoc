@@ -414,6 +414,45 @@ func (s *Search) BatchDeleteActionFunc() {
 	}
 }
 
+func (s *Search) SelectAllRows() {
+	for i := 0; i < s.ResultList.GetRowCount(); i++ {
+		log.Debugf("current row %d", s.CurrentRowIndex)
+		doc, err := s.LoadMiniDocFromDB(i)
+		if err != nil {
+			log.Errorf("minidoc from failed: %v", err)
+			return
+		}
+
+		if !doc.IsSelected() {
+			doc.SetIsSelected(true)
+		} else {
+			doc.SetIsSelected(false)
+		}
+		s.ResultList.UpdateRow(i, doc)
+	}
+}
+
+func (s *Search) ToggleAllRows() {
+	for i := 0; i < s.ResultList.GetRowCount(); i++ {
+		log.Debugf("current row %d", s.CurrentRowIndex)
+		doc, err := s.LoadMiniDocFromDB(i)
+		if err != nil {
+			log.Errorf("minidoc from failed: %v", err)
+			return
+		}
+
+		if !doc.GetToggle() {
+			doc.SetToggle(true)
+		} else {
+			doc.SetToggle(false)
+		}
+		_, err = s.App.DataHandler.Write(doc)
+		if err == nil {
+			s.ResultList.UpdateRow(i, doc)
+		}
+	}
+}
+
 func (s *Search) ToggleSelected() {
 	log.Debugf("current row %d", s.CurrentRowIndex)
 	doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
