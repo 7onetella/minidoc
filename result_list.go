@@ -193,7 +193,7 @@ func (rl *ResultList) UpdateRow(row int, doc MiniDoc) {
 	selected := doc.IsSelected()
 
 	if doc.IsTogglable() {
-		// swap it out with the the one from db
+		// swap it out with the one from db
 		docFromDB, _ := rl.Search.App.DataHandler.BucketHandler.Read(doc.GetID(), doc.GetType())
 		doc = docFromDB
 		doc.SetSearchFragments(fragments)
