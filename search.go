@@ -131,10 +131,10 @@ func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKe
 }
 
 const typeColumnIndex = 0
-const idColumnIndex = 1
-const selectedColumnIndex = 2
-const toggledColumnIndex = 3
-const fragmentsColumnIndex = 4
+const selectedColumnIndex = 1
+const toggledColumnIndex = 2
+const fragmentsColumnIndex = 3
+const idColumnIndex = 4
 
 func (s *Search) Search(searchby string) bool {
 	searchTerms := ""

@@ -210,10 +210,10 @@ func (rl *ResultList) UpdateRow(row int, doc MiniDoc) {
 
 	cd := []CellData{
 		CellData{doctype, doc.GetIDString()},
-		CellData{doc.GetID(), ""},
 		CellData{doc.IsSelected(), doc.IsSelectedString()},
 		CellData{doc.GetToggle(), doc.GetToggleValueAsString()},
 		CellData{fragments + cellpadding, fragments + cellpadding},
+		CellData{doc.GetID(), ""},
 	}
 	rl.SetColumnCells(row, cd)
 }
