@@ -200,8 +200,8 @@ func (s *Search) UpdateResult(result []MiniDoc) {
 }
 
 func EditWithVim(app *SimpleApp, doc MiniDoc) MiniDoc {
-	json := JsonMap(doc)
-	jh := NewJSONHandler(json)
+	json := JsonMapFrom(doc)
+	jh := NewJsonMapWrapper(json)
 
 	for _, fieldName := range doc.GetViEditFields() {
 		inputFile := "/tmp/.minidoc_input.tmp"
@@ -316,8 +316,8 @@ func (s *Search) Preview(direction int) {
 	// result list select only makes sense for shifting the focus over and selecting
 	s.App.StatusBar.SetText(fmt.Sprintf("%d | %s", s.CurrentRowIndex, doc.GetAvailableActions()))
 
-	json := JsonMap(doc)
-	jh := NewJSONHandler(json)
+	json := JsonMapFrom(doc)
+	jh := NewJsonMapWrapper(json)
 
 	content := ""
 	s.Detail.SetTitle(doc.GetIDString())
@@ -356,7 +356,7 @@ func (s *Search) Edit() {
 		return
 	}
 
-	s.EditForm = NewEdit(s, doc).Form
+	s.EditForm = NewEditForm(s, doc)
 
 	if !s.IsEditMode {
 		s.Columns.RemoveItem(s.Detail)
@@ -369,6 +369,24 @@ func (s *Search) Edit() {
 
 func (s *Search) BatchDeleteConfirmation() {
 	ConfirmationModal(s.App, "Batch delete selected rows?", s.BatchDeleteActionFunc)
+}
+
+func ConfirmationModal(app *SimpleApp, message string, action func()) {
+	modal := tview.NewModal().
+		SetText(message).
+		AddButtons([]string{"Yes", "No"}).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			if buttonLabel == "Yes" {
+				action()
+			}
+			if err := app.SetRoot(app.Layout, true).Run(); err != nil {
+				panic(err)
+			}
+		})
+
+	if err := app.SetRoot(modal, false).Run(); err != nil {
+		panic(err)
+	}
 }
 
 func (s *Search) BatchDeleteActionFunc() {

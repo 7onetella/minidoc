@@ -7,70 +7,62 @@ import (
 )
 
 type Edit struct {
-	Form   *tview.Form
-	Search *Search
-	json   interface{}
-	debug  func(string)
+	Form    *tview.Form
+	Search  *Search
+	jsonMap interface{}
 }
 
-func NewEdit(s *Search, doc MiniDoc) *Edit {
-	json := JsonMap(doc)
+func NewEditForm(s *Search, doc MiniDoc) *tview.Form {
+	jsonMap := JsonMapFrom(doc)
 
 	edit := &Edit{
-		Search: s,
-		debug:  s.App.DebugView.Debug,
-		json:   json,
+		Search:  s,
+		jsonMap: jsonMap,
 	}
 
-	f := NewEditorForm(doc)
-
+	f := NewFormWithFields(doc)
 	f.AddButton("Update", edit.UpdateAction)
 	f.AddButton("Delete", edit.DeleteAction)
 	f.AddButton("Cancel", edit.CancelAction)
 	f.SetBorderPadding(1, 1, 2, 2)
 	f.SetBorder(true)
-
 	edit.Form = f
 
-	return edit
+	return f
 }
 
-func NewEditorForm(doc MiniDoc) *tview.Form {
+func NewFormWithFields(doc MiniDoc) *tview.Form {
 	f := tview.NewForm()
 
-	json := JsonMap(doc)
-	jh := NewJSONHandler(json)
-	f.SetTitle(jh.string("type") + ":" + jh.string("id"))
+	json := JsonMapFrom(doc)
+	j := NewJsonMapWrapper(json)
+	f.SetTitle(j.string("type") + ":" + j.string("id"))
 	if doc == nil {
 		log.Errorf("doc is nil")
 		return nil
 	}
 mainLoop:
-	for _, fieldName := range doc.GetDisplayFields() {
-		if fieldName == "type" || fieldName == "id" || fieldName == "created_date" {
-			continue
-		}
+	for _, fieldname := range doc.GetEditFields() {
 
-		fieldtype := jh.fieldtype(fieldName)
+		fieldtype := j.fieldtype(fieldname)
 
 		// if vim already populated the field then skip
-		for _, editFieldName := range doc.GetViEditFields() {
-			if editFieldName == fieldName {
-				fieldValue := jh.string(fieldName)
-				if len(fieldValue) > 0 {
+		for _, editfieldname := range doc.GetViEditFields() {
+			if editfieldname == fieldname {
+				value := j.string(fieldname)
+				if len(value) > 0 {
 					continue mainLoop
 				}
 			}
 		}
 
-		fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
-		//edit.debug("adding input field for " + fieldNameCleaned)
-		label := fieldNameCleaned + ":"
+		cleanfieldname := strings.Replace(fieldname, "_", " ", -1)
+		label := cleanfieldname + ":"
 		switch fieldtype {
 		case "string":
-			f.AddInputField(label, jh.string(fieldName), 0, nil, nil)
+			f.AddInputField(label, j.string(fieldname), 0, nil, nil)
 		case "bool":
-			f.AddCheckbox(label, jh.bool(fieldName), nil)
+			f.AddCheckbox(label, j.bool(fieldname), nil)
 		}
 	}
 	return f
@@ -78,16 +70,16 @@ mainLoop:
 
 func (e *Edit) UpdateAction() {
 	f := e.Form
-	jh := NewJSONHandler(e.json)
+	jh := NewJsonMapWrapper(e.jsonMap)
 
 	ExtractFieldValues(jh, f)
 
-	doc, err := MiniDocFrom(e.json)
+	doc, err := MiniDocFrom(e.jsonMap)
 	if err != nil {
 		log.Errorf("MiniDocFrom failed: %v", err)
 		return
 	}
-	log.Debugf("minidoc from json: %v", e.json)
+	log.Debugf("minidoc from json: %v", e.jsonMap)
 
 	_, err = e.Search.App.DataHandler.Write(doc)
 	if err != nil {
@@ -98,7 +90,7 @@ func (e *Edit) UpdateAction() {
 	e.Search.UnLoadEdit()
 }
 
-func ExtractFieldValues(jh *JSONHandler, f *tview.Form) {
+func ExtractFieldValues(jh *JsonMapWrapper, f *tview.Form) {
 	for fieldName, _ := range jh.fields() {
 		if fieldName == "type" || fieldName == "id" || fieldName == "created_date" || fieldName == "fragments" {
 			continue
@@ -131,25 +123,7 @@ func ExtractFieldValues(jh *JSONHandler, f *tview.Form) {
 }
 
 func (e *Edit) DeleteAction() {
-	ConfirmDeleteModal(e.Search, e.json, e.Search.App.DataHandler.Delete)
-}
-
-func ConfirmationModal(app *SimpleApp, message string, action func()) {
-	modal := tview.NewModal().
-		SetText(message).
-		AddButtons([]string{"Yes", "No"}).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonLabel == "Yes" {
-				action()
-			}
-			if err := app.SetRoot(app.Layout, true).Run(); err != nil {
-				panic(err)
-			}
-		})
-
-	if err := app.SetRoot(modal, false).Run(); err != nil {
-		panic(err)
-	}
+	ConfirmDeleteModal(e.Search, e.jsonMap, e.Search.App.DataHandler.Delete)
 }
 
 func ConfirmDeleteModal(s *Search, json interface{}, deleteFunc func(doc MiniDoc) error) {

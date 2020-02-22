@@ -6,24 +6,24 @@ import (
 	"reflect"
 )
 
-type JSONHandler struct {
-	json interface{}
-	err  error
+type JsonMapWrapper struct {
+	jsonMap interface{}
+	err     error
 }
 
-func NewJSONHandler(json interface{}) *JSONHandler {
-	return &JSONHandler{
-		json,
+func NewJsonMapWrapper(jsonMap interface{}) *JsonMapWrapper {
+	return &JsonMapWrapper{
+		jsonMap,
 		nil,
 	}
 }
 
-func (j *JSONHandler) ok() bool {
+func (j *JsonMapWrapper) ok() bool {
 	return j.err == nil
 }
 
-func (j *JSONHandler) fields() map[string]interface{} {
-	m, ok := j.json.(map[string]interface{})
+func (j *JsonMapWrapper) fields() map[string]interface{} {
+	m, ok := j.jsonMap.(map[string]interface{})
 	if ok {
 		return m
 	}
@@ -31,10 +31,10 @@ func (j *JSONHandler) fields() map[string]interface{} {
 	return nil
 }
 
-func (j *JSONHandler) string(property string) string {
+func (j *JsonMapWrapper) string(field string) string {
 	m := j.fields()
 	if j.ok() {
-		v, found := m[property]
+		v, found := m[field]
 		if found {
 			vtype := reflect.TypeOf(v).String()
 			switch vtype {
@@ -53,11 +53,11 @@ func (j *JSONHandler) string(property string) string {
 			}
 		}
 	}
-	j.err = fmt.Errorf("property not found: " + property)
+	j.err = fmt.Errorf("field not found: " + field)
 	return ""
 }
 
-func (j *JSONHandler) float64(property string) float64 {
+func (j *JsonMapWrapper) float64(property string) float64 {
 	m := j.fields()
 	if j.ok() {
 		v, found := m[property].(float64)
@@ -70,7 +70,7 @@ func (j *JSONHandler) float64(property string) float64 {
 	return 0
 }
 
-func (j *JSONHandler) bool(property string) bool {
+func (j *JsonMapWrapper) bool(property string) bool {
 	m := j.fields()
 	if j.ok() {
 		v, found := m[property].(bool)
@@ -82,7 +82,7 @@ func (j *JSONHandler) bool(property string) bool {
 	return false
 }
 
-func (j *JSONHandler) set(property string, v interface{}) {
+func (j *JsonMapWrapper) set(property string, v interface{}) {
 	m := j.fields()
 	if !j.ok() {
 		j.err = fmt.Errorf("error getting fields")
@@ -100,7 +100,7 @@ func (j *JSONHandler) set(property string, v interface{}) {
 	}
 }
 
-func (j *JSONHandler) fieldtype(property string) string {
+func (j *JsonMapWrapper) fieldtype(property string) string {
 	m := j.fields()
 	if j.ok() {
 		v, found := m[property]
@@ -113,10 +113,10 @@ func (j *JSONHandler) fieldtype(property string) string {
 	return ""
 }
 
-func JsonMap(doc MiniDoc) interface{} {
-	jsonBytes, err := json.Marshal(doc)
+func JsonMapFrom(minidoc MiniDoc) interface{} {
+	jsonBytes, err := json.Marshal(minidoc)
 	if err != nil {
-		log.Errorf("marshaling to bytes minidoc=%v", doc)
+		log.Errorf("marshaling to bytes minidoc=%v", minidoc)
 		return nil
 	}
 
@@ -130,7 +130,7 @@ func JsonMap(doc MiniDoc) interface{} {
 }
 
 func MiniDocFrom(jsonMap interface{}) (MiniDoc, error) {
-	jh := NewJSONHandler(jsonMap)
+	jh := NewJsonMapWrapper(jsonMap)
 	doctype := jh.string("type")
 	jsonBytes, err := json.Marshal(jsonMap)
 	if err != nil {

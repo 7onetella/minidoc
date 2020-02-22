@@ -21,7 +21,7 @@ type URLDoc struct {
 }
 
 func (u *URLDoc) GetJSON() interface{} {
-	return JsonMap(u)
+	return JsonMapFrom(u)
 }
 
 func (m *URLDoc) HandleEvent(event *tcell.EventKey) {
@@ -62,6 +62,16 @@ func (u *URLDoc) GetDisplayFields() []string {
 	}
 }
 
+func (u *URLDoc) GetEditFields() []string {
+	return []string{
+		"url",
+		"watch_later",
+		"title",
+		"description",
+		"tags",
+	}
+}
+
 func (m *URLDoc) GetToggleValueAsString() string {
 	if m.WatchLater {
 		return "✓️"
@@ -85,7 +95,7 @@ type NoteDoc struct {
 }
 
 func (n *NoteDoc) GetJSON() interface{} {
-	return JsonMap(n)
+	return JsonMapFrom(n)
 }
 
 func (n *NoteDoc) GetDisplayFields() []string {
@@ -96,6 +106,14 @@ func (n *NoteDoc) GetDisplayFields() []string {
 		"note",
 		"tags",
 		"created_date",
+	}
+}
+
+func (n *NoteDoc) GetEditFields() []string {
+	return []string{
+		"title",
+		"note",
+		"tags",
 	}
 }
 
@@ -119,7 +137,7 @@ type ToDoDoc struct {
 }
 
 func (d *ToDoDoc) GetJSON() interface{} {
-	return JsonMap(d)
+	return JsonMapFrom(d)
 }
 
 func (d *ToDoDoc) GetDisplayFields() []string {
@@ -130,6 +148,14 @@ func (d *ToDoDoc) GetDisplayFields() []string {
 		"done",
 		"tags",
 		"created_date",
+	}
+}
+
+func (d *ToDoDoc) GetEditFields() []string {
+	return []string{
+		"task",
+		"done",
+		"tags",
 	}
 }
 

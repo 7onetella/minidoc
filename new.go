@@ -10,7 +10,6 @@ type New struct {
 	Layout        *tview.Flex
 	Form          *tview.Form
 	json          interface{}
-	debug         func(string)
 	IndexHandler  *IndexHandler
 	BucketHandler *BucketHandler
 }
@@ -22,18 +21,17 @@ func NewNewPage(doc MiniDoc) *New {
 
 	log.Debugf("new doctype: %s", doc.GetType())
 
-	n.Form = NewEditorForm(doc)
+	n.Form = NewFormWithFields(doc)
 	n.Form.SetBorder(false)
 	n.Form.AddButton("Create", n.CreateAction)
 	n.Form.AddButton("Cancel", n.CancelAction)
-	n.json = JsonMap(doc)
+	n.json = JsonMapFrom(doc)
 
 	return n
 }
 
 func (n *New) SetApp(app *SimpleApp) {
 	n.App = app
-	n.debug = app.DebugView.Debug
 }
 
 func (n *New) Page() (title string, content tview.Primitive) {
@@ -46,7 +44,7 @@ func (n *New) Page() (title string, content tview.Primitive) {
 
 func (n *New) CreateAction() {
 	f := n.Form
-	jh := NewJSONHandler(n.json)
+	jh := NewJsonMapWrapper(n.json)
 
 	ExtractFieldValues(jh, f)
 

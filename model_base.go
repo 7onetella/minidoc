@@ -19,6 +19,7 @@ type MiniDoc interface {
 	GetJSON() interface{}
 	SetCreatedDate(string)
 	GetDisplayFields() []string
+	GetEditFields() []string
 	IsSelected() bool
 	SetIsSelected(bool)
 	IsSelectedString() string
@@ -85,7 +86,7 @@ func (m *BaseDoc) SetSearchFragments(fragments string) {
 }
 
 func (m *BaseDoc) GetJSON() interface{} {
-	return JsonMap(m)
+	return JsonMapFrom(m)
 }
 
 func (m *BaseDoc) SetCreatedDate(createdDate string) {
@@ -124,6 +125,14 @@ func (m *BaseDoc) GetDisplayFields() []string {
 		"type",
 		"title",
 		"created_date",
+		"description",
+		"tags",
+	}
+}
+
+func (m *BaseDoc) GetEditFields() []string {
+	return []string{
+		"title",
 		"description",
 		"tags",
 	}
