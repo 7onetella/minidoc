@@ -121,6 +121,11 @@ func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKe
 			return nil
 		}
 
+		if event.Key() == tcell.KeyCtrlSpace {
+			s.GoToSearchBar(true)
+			return nil
+		}
+
 		return event
 	}
 }
@@ -263,10 +268,12 @@ func (s *Search) GoToSearchResult() {
 	s.App.Draw()
 }
 
-func (s *Search) GoToSearchBar() {
+func (s *Search) GoToSearchBar(clear bool) {
 	s.ResultList.SetSelectable(false, false)
-	//s.SearchBar.Clear(true)
-	//s.InitSearchBar()
+	if clear {
+		s.SearchBar.Clear(true)
+		s.InitSearchBar()
+	}
 	s.App.Draw()
 	s.App.SetFocus(s.SearchBar)
 }

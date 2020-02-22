@@ -89,13 +89,15 @@ func (rl *ResultList) GetResultListInputCaptureFunc() func(event *tcell.EventKey
 			s.ToggleAllRows()
 			return nil
 		case tcell.KeyTab:
-			s.GoToSearchBar()
+			s.GoToSearchBar(false)
 			return nil
 		case tcell.KeyEnter:
 			s.Preview(DIRECTION_NONE)
 			return nil
 		case tcell.KeyCtrlD:
 			s.BatchDeleteConfirmation()
+		case tcell.KeyCtrlSpace:
+			s.GoToSearchBar(true)
 		default:
 			return s.DelegateEventHandlingMiniDoc(event)
 		}
