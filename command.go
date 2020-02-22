@@ -45,7 +45,7 @@ func (s *Search) HandleCommand(command string) {
 				return
 			}
 			OpenVim(s.App, filepath)
-			s.App.StatusBar.SetText("[green]markdown generated[white]")
+			s.App.StatusBar.SetText("[white]markdown generated[white]")
 
 		}
 	case "list":
@@ -66,7 +66,7 @@ func (s *Search) HandleCommand(command string) {
 		s.SelectRow(0)
 		s.App.SetFocus(s.SearchBar)
 
-		s.App.StatusBar.SetText("[green]listing docs by type[white]")
+		s.App.StatusBar.SetText("[white]listing docs by type " + doctype)
 	case "tag":
 		tags := terms[1:]
 		for i := 0; i < s.ResultList.GetRowCount(); i++ {
@@ -93,7 +93,7 @@ func (s *Search) HandleCommand(command string) {
 			doc.SetTags(str)
 			s.App.DataHandler.Write(doc)
 		}
-		s.App.StatusBar.SetText("[green]tagged[white]")
+		s.App.StatusBar.SetText("[white]tagged[white]")
 	case "untag":
 		tags := terms[1:]
 		for i := 0; i < s.ResultList.GetRowCount(); i++ {
@@ -127,7 +127,7 @@ func (s *Search) HandleCommand(command string) {
 			}
 
 		}
-		s.App.StatusBar.SetText("[green]untagged[white]")
+		s.App.StatusBar.SetText("[white]untagged[white]")
 	}
 }
 

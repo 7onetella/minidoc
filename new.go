@@ -63,7 +63,7 @@ func (n *New) CreateAction() {
 
 	n.App.PagesHandler.RemoveLastPage(n.App)
 	n.App.PagesHandler.GotoPageByTitle("Search")
-	n.App.StatusBar.SetText(fmt.Sprintf("[green]%s:%d created[white]", doc.GetType(), id))
+	n.App.StatusBar.SetText(fmt.Sprintf("[white]%s:%d created[white]", doc.GetType(), id))
 	n.App.Draw()
 }
 

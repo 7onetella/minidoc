@@ -97,6 +97,10 @@ func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKe
 		if len(text) > 0 {
 			terms = strings.Split(text, " ")
 		}
+		if terms == nil {
+			return event
+		}
+
 		if event.Key() == tcell.KeyEnter {
 			// if term0 starts with @ and terms length is 1 then disregard enter
 			if len(terms) == 0 && strings.HasPrefix(terms[0], "@") {
