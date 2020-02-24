@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell"
+	"github.com/google/uuid"
 	"github.com/rivo/tview"
 )
 
@@ -210,17 +211,27 @@ func (s *Search) UpdateResult(result []MiniDoc) {
 	s.App.Draw()
 }
 
-func EditWithVim(app *SimpleApp, doc MiniDoc) MiniDoc {
+func EditWithVim(app *SimpleApp, doc MiniDoc) (MiniDoc, bool) {
 	json := JsonMapFrom(doc)
 	jh := NewJsonMapWrapper(json)
 
+	changed := false
 	for _, fieldName := range doc.GetViEditFields() {
-		inputFile := "/tmp/.minidoc_input.tmp"
-		WriteToFile(inputFile, jh.string(fieldName))
+		UUID := uuid.New().String()
+		file := fmt.Sprintf("/tmp/%s", UUID)
+		// write field value to the file
+		WriteToFile(file, jh.string(fieldName))
+		// let user edit
+		OpenVim(app, file)
+		// read what was entered
+		content, err := ReadFromFile(file)
+		// delete now since content has been read
+		DeleteFile(file)
 
-		OpenVim(app, inputFile)
-
-		content, err := ReadFromFile(inputFile)
+		content = strings.TrimSpace(content)
+		if len(content) > 0 {
+			changed = true
+		}
 		log.Debugf("new content from input file: %s", content)
 		if err != nil {
 			log.Errorf("error reading: %v", err)
@@ -234,7 +245,7 @@ func EditWithVim(app *SimpleApp, doc MiniDoc) MiniDoc {
 		log.Errorf("error converting: %v", err)
 	}
 
-	return doc
+	return doc, changed
 }
 
 const (

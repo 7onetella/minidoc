@@ -138,13 +138,15 @@ func NewDocFlow(doctype string, app *SimpleApp) error {
 		return err
 	}
 
-	doc = EditWithVim(app, doc)
-	id, err := app.DataHandler.Write(doc)
-	if err != nil {
-		log.Errorf("error writing: %v", err)
-		return err
+	doc, changed := EditWithVim(app, doc)
+	if changed {
+		id, err := app.DataHandler.Write(doc)
+		if err != nil {
+			log.Errorf("error writing: %v", err)
+			return err
+		}
+		doc.SetID(id)
 	}
-	doc.SetID(id)
 
 	newPage := NewNewPage(doc)
 	app.PagesHandler.AddPage(app, newPage)

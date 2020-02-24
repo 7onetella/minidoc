@@ -27,7 +27,7 @@ func NewResultList(s *Search) *ResultList {
 	rl.SetBorder(true)
 	rl.SetBorderPadding(1, 1, 2, 2)
 
-	rl.SetInputCapture(rl.GetResultListInputCaptureFunc())
+	rl.SetInputCapture(rl.InputCapture())
 
 	return rl
 }
@@ -38,7 +38,7 @@ func (rl *ResultList) InsertColumns(size int) {
 	}
 }
 
-func (rl *ResultList) GetResultListInputCaptureFunc() func(event *tcell.EventKey) *tcell.EventKey {
+func (rl *ResultList) InputCapture() func(event *tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		s := rl.Search
 		//log.Debug("EventKey: " + event.Name())
@@ -60,10 +60,12 @@ func (rl *ResultList) GetResultListInputCaptureFunc() func(event *tcell.EventKey
 					log.Debugf("error getting json from curr row: %v", err)
 					return event
 				}
-				doc = EditWithVim(rl.Search.App, doc)
-				_, err = s.App.DataHandler.Write(doc)
-				if err != nil {
-					log.Errorf("error writing: %v", err)
+				doc, changed := EditWithVim(rl.Search.App, doc)
+				if changed {
+					_, err = s.App.DataHandler.Write(doc)
+					if err != nil {
+						log.Errorf("error writing: %v", err)
+					}
 				}
 				s.Preview(DIRECTION_NONE)
 				return nil

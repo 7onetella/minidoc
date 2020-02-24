@@ -14,12 +14,12 @@ func WriteToFile(filepath, content string) (done bool) {
 		log.Errorf("creating file: %v", err)
 		return true
 	}
+	defer file.Close()
 	_, err = fmt.Fprintf(file, content)
 	if err != nil {
 		log.Errorf("writing content: %v", err)
 		return true
 	}
-	file.Close()
 	return false
 }
 
@@ -33,12 +33,22 @@ func ReadFromFile(filepath string) (string, error) {
 	return string(dat), nil
 }
 
+func DeleteFile(filepath string) (success bool) {
+	err := os.Remove(filepath)
+	if err != nil {
+		log.Errorf("creating file: %v", err)
+		return false
+	}
+	return true
+}
+
 // this works perfectly
 func OpenVim(app *SimpleApp, filepath string) {
 	app.Suspend(func() {
 		cmd := exec.Command("vim", filepath)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		if err != nil {
 			log.Errorf("opening vi: %v", err)
