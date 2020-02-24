@@ -349,7 +349,7 @@ func (s *Search) Preview(direction int) {
 		if len(lines) > 1 {
 			content += "\n"
 			for _, line := range lines {
-				content += fmt.Sprintf("    [darkcyan]%s[darkcyan] \n", line)
+				content += fmt.Sprintf("  [darkcyan]%s[darkcyan] \n", line)
 			}
 		} else {
 			content += fmt.Sprintf(" [darkcyan]%s[darkcyan] \n", v)
