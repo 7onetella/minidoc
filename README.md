@@ -27,5 +27,5 @@ $ go build && ./minidoc
 $ go test 
 ```
 
-### Screencast
+### Asciicast
 [![asciicast](https://asciinema.org/a/MoSChtTE6KuLhzg4w0TJl8Puv.svg)](https://asciinema.org/a/MoSChtTE6KuLhzg4w0TJl8Puv)
