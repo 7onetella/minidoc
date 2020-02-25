@@ -19,3 +19,6 @@ $ go build && ./minidoc
 ```console
 $ go test 
 ```
+
+### Screencast
+[![asciicast](https://asciinema.org/a/MoSChtTE6KuLhzg4w0TJl8Puv.svg)](https://asciinema.org/a/MoSChtTE6KuLhzg4w0TJl8Puv)
