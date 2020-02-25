@@ -2,22 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	//"github.com/lacion/cookiecutter_golang_example/log"
+	"github.com/mitchellh/go-homedir"
 	"os"
 
 	"github.com/7onetella/minidoc"
-	l "github.com/7onetella/minidoc/log"
 	"github.com/gdamore/tcell"
-	"github.com/mitchellh/go-homedir"
-
 	"github.com/spf13/cobra"
 )
 
-var log = l.GetNewLogrusLogger()
-
-var cfgFile string
-
-var devMode bool
+var DevMode bool
 
 var reindex bool
 
@@ -34,7 +27,6 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	 Run: func(cmd *cobra.Command, args []string) {
-		 log.Debug("root.Execute")
 		 launchMinidoc()
 	 },
 }
@@ -53,7 +45,7 @@ func init() {
 	flags := rootCmd.Flags()
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	flags.BoolVar(&devMode, "dev",false, "development mode")
+	flags.BoolVar(&DevMode, "dev",false, "development mode")
 
 	flags.BoolVar(&reindex, "reindex",false, "reindex docs")
 
@@ -61,13 +53,7 @@ func init() {
 
 func launchMinidoc() {
 
-	homedir, _ := homedir.Dir() // return path with slash at the end
-	minidocHome := homedir + "/.minidoc"
-
-	if devMode {
-		minidocHome = ".minidoc"
-	}
-	os.MkdirAll(minidocHome, os.ModePerm)
+	minidocHome := CreateMinidocHomeIfNotFound(DevMode)
 
 	pageItems := []minidoc.PageItem{minidoc.NewSearch(), minidoc.NewHelp()}
 	options := []minidoc.SimpleAppOption{
@@ -77,13 +63,11 @@ func launchMinidoc() {
 		minidoc.WithSimpleAppDataFolderPath(minidocHome),
 		minidoc.WithSimpleAppDocsReindexed(reindex),
 	}
-	if devMode {
+	if DevMode {
 		options = append(options, minidoc.WithSimpleAppDebugOn())
 	}
 
 	app := minidoc.NewSimpleApp(options...)
-
-	defer l.Logfile.Close()
 
 	if err := app.SetRoot(app.Layout, true).Run(); err != nil {
 		panic(err)
@@ -101,4 +85,15 @@ func GetWithSimpleAppDelegateKeyEvent() minidoc.SimpleAppOption {
 		}
 		return event
 	})
+}
+
+func CreateMinidocHomeIfNotFound(devMode bool) string {
+	homedir, _ := homedir.Dir() // return path with slash at the end
+	minidocHome := homedir + "/.minidoc"
+
+	if devMode {
+		minidocHome = ".minidoc"
+	}
+	os.MkdirAll(minidocHome, os.ModePerm)
+	return minidocHome
 }
