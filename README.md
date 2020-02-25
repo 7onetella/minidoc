@@ -1,7 +1,7 @@
 # minidoc
 
-Manage small pieces of information using minidoc. They can URLs, TODOs, and Notes. I will either enable plugin or ability to 
-define schema on the fly. 
+Manage small pieces of information using minidoc. Currently, you can manage URLs, TODOs, and Notes. I will either enable plugin or ability to 
+define schemas on the fly. 
 
 ## Installation using homebrew
 ```console
