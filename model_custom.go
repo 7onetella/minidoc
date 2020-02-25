@@ -14,25 +14,28 @@ var indexedFields = map[string][]string{
 	"todo": {"task", "done", "tags"},
 }
 
+// --------------------------------------------------------------------------------
+// URL Doc
+// --------------------------------------------------------------------------------
 type URLDoc struct {
 	BaseDoc
 	URL        string `json:"url"`
 	WatchLater bool   `json:"watch_later"`
 }
 
-func (u *URLDoc) GetJSON() interface{} {
-	return JsonMapFrom(u)
+func (d *URLDoc) GetJSON() interface{} {
+	return JsonMapFrom(d)
 }
 
-func (m *URLDoc) HandleEvent(event *tcell.EventKey) {
+func (d *URLDoc) HandleEvent(event *tcell.EventKey) {
 	eventKey := event.Key()
 
 	switch eventKey {
 	case tcell.KeyRune:
 		switch event.Rune() {
 		case 'o':
-			log.Debugf("opening url %s in the browser", m.URL)
-			_, err := Execute(strings.Split("open "+m.URL, " "))
+			log.Debugf("opening url %s in the browser", d.URL)
+			_, err := Execute(strings.Split("open "+d.URL, " "))
 			if err != nil {
 				log.Errorf("urldoc exection: %v", err)
 				return
@@ -41,15 +44,15 @@ func (m *URLDoc) HandleEvent(event *tcell.EventKey) {
 	}
 }
 
-func (M *URLDoc) GetAvailableActions() string {
+func (d *URLDoc) GetAvailableActions() string {
 	return "[yellow]o[white]pen url in browser | [yellow]t[white]oggle watch later"
 }
 
-func (m *URLDoc) GetMarkdown() string {
-	return fmt.Sprintf(`link: [%s](%s)`, m.Title, m.URL)
+func (d *URLDoc) GetMarkdown() string {
+	return fmt.Sprintf(`link: [%s](%s)`, d.Title, d.URL)
 }
 
-func (u *URLDoc) GetDisplayFields() []string {
+func (d *URLDoc) GetDisplayFields() []string {
 	return []string{
 		"id",
 		"type",
@@ -62,7 +65,7 @@ func (u *URLDoc) GetDisplayFields() []string {
 	}
 }
 
-func (u *URLDoc) GetEditFields() []string {
+func (d *URLDoc) GetEditFields() []string {
 	return []string{
 		"url",
 		"watch_later",
@@ -72,33 +75,34 @@ func (u *URLDoc) GetEditFields() []string {
 	}
 }
 
-func (m *URLDoc) GetToggleValueAsString() string {
-	if m.WatchLater {
+func (d *URLDoc) GetToggleValueAsString() string {
+	if d.WatchLater {
 		return "✓️"
 	}
 	return " "
 }
 
-func (m *URLDoc) SetToggle(toggle bool) {
-	m.WatchLater = toggle
+func (d *URLDoc) SetToggle(toggle bool) {
+	d.WatchLater = toggle
 }
 
-func (m *URLDoc) GetToggle() bool {
-	return m.WatchLater
+func (d *URLDoc) GetToggle() bool {
+	return d.WatchLater
 }
 
 // --------------------------------------------------------------------------------
-
+// Note Doc
+// --------------------------------------------------------------------------------
 type NoteDoc struct {
 	BaseDoc
 	Note string `json:"note"`
 }
 
-func (n *NoteDoc) GetJSON() interface{} {
-	return JsonMapFrom(n)
+func (d *NoteDoc) GetJSON() interface{} {
+	return JsonMapFrom(d)
 }
 
-func (n *NoteDoc) GetDisplayFields() []string {
+func (d *NoteDoc) GetDisplayFields() []string {
 	return []string{
 		"id",
 		"type",
@@ -109,11 +113,11 @@ func (n *NoteDoc) GetDisplayFields() []string {
 	}
 }
 
-func (M *NoteDoc) GetAvailableActions() string {
+func (d *NoteDoc) GetAvailableActions() string {
 	return ""
 }
 
-func (n *NoteDoc) GetEditFields() []string {
+func (d *NoteDoc) GetEditFields() []string {
 	return []string{
 		"title",
 		"note",
@@ -121,19 +125,20 @@ func (n *NoteDoc) GetEditFields() []string {
 	}
 }
 
-func (n *NoteDoc) GetViEditFields() []string {
+func (d *NoteDoc) GetViEditFields() []string {
 	return []string{"note"}
 }
 
-func (n *NoteDoc) GetMarkdown() string {
+func (d *NoteDoc) GetMarkdown() string {
 	return fmt.Sprintf(`## %s
 %s
 %s
-%s`, n.Title, "```", n.Note, "```")
+%s`, d.Title, "```", d.Note, "```")
 }
 
 // --------------------------------------------------------------------------------
-
+// TODO Doc
+// --------------------------------------------------------------------------------
 type ToDoDoc struct {
 	BaseDoc
 	Task string `json:"task"`
@@ -201,4 +206,35 @@ func (d *ToDoDoc) SetToggle(toggle bool) {
 
 func (d *ToDoDoc) GetToggle() bool {
 	return d.Done
+}
+
+// --------------------------------------------------------------------------------
+// ShortcutKey Doc
+// --------------------------------------------------------------------------------
+type ShortcutKeyDoc struct {
+	BaseDoc
+	ShortCutKey string `json:"shortcut"`
+}
+
+func (d *ShortcutKeyDoc) GetJSON() interface{} {
+	return JsonMapFrom(d)
+}
+
+func (d *ShortcutKeyDoc) GetDisplayFields() []string {
+	return []string{
+		"id",
+		"type",
+		"title",
+		"shortcut",
+		"tags",
+		"created_date",
+	}
+}
+
+func (d *ShortcutKeyDoc) GetEditFields() []string {
+	return []string{
+		"title",
+		"shortcut",
+		"tags",
+	}
 }

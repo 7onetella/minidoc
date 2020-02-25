@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
+	//"github.com/7onetella/minidoc/minidoc/cmd"
 )
 
 // Provider defines a set of read-only methods for accessing the application
@@ -28,8 +29,6 @@ type Provider interface {
 	InConfig(key string) bool
 	IsSet(key string) bool
 }
-
-var cfgFile string
 
 var defaultConfig *viper.Viper
 
@@ -56,27 +55,22 @@ func readViperConfig(appName string) *viper.Viper {
 	v.SetDefault("loglevel", "info")
 	v.SetDefault("log_filename", "minidoc.log")
 
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		v.AddConfigPath(home)
-		v.SetConfigName(".minidoc")
-		//v.SetConfigType("yml")
+	// Find home directory.
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
 	}
+
+	v.AddConfigPath(home)
+	v.SetConfigName(".minidoc")
+	//v.SetConfigType("yml")
 
 	v.SetEnvPrefix(appName)
 	v.AutomaticEnv()
 
 	// If a config file is found, read it in.
 	if err := v.ReadInConfig(); err != nil {
-		fmt.Println(err)
+		// if the error occurs, rely on default
 	}
 
 	return v

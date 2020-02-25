@@ -165,6 +165,9 @@ func NewDoc(doctype string) (MiniDoc, error) {
 	case "todo":
 		doc = &ToDoDoc{}
 		doc.SetType("todo")
+	case "shortcut":
+		doc = &ShortcutKeyDoc{}
+		doc.SetType("shortcut")
 	default:
 		return nil, fmt.Errorf("doctype %s not handled", doctype)
 	}
