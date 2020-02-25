@@ -22,7 +22,7 @@ func TestIndexHandler_Search(t *testing.T) {
 	db.Write(doc)
 	indexer.Index(doc)
 
-	docs := indexer.Search("baz")
+	docs, _ := indexer.Search("baz")
 
 	if len(docs) == 0 {
 		t.Fail()
