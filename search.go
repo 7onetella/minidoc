@@ -61,7 +61,7 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	return "Search", s.Layout
 }
 
-var words = []string{"@new", "@list", "@generate", "@tag", "@untag"}
+var words = []string{"@new", "@generate", "@tag", "@untag"}
 
 func (s *Search) InitSearchBar() {
 	//log.Debug("resetting search bar")
@@ -105,7 +105,7 @@ func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKe
 			}
 
 			// if term0 starts with @ and terms length is 1 then disregard enter
-			if len(terms) == 0 && strings.HasPrefix(terms[0], "@") {
+			if len(terms) == 1 && strings.HasPrefix(terms[0], "@") {
 				return event
 			}
 			done := s.Search(text)
@@ -121,6 +121,10 @@ func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKe
 
 		if event.Key() == tcell.KeyTab {
 			log.Debug("tab pressed from search bar")
+			if len(terms) == 1 && strings.HasPrefix(terms[0], "@") {
+				return event
+			}
+
 			if s.ResultList.GetRowCount() > 0 {
 				s.GoToSearchResult()
 				return nil
