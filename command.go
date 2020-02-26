@@ -1,7 +1,9 @@
 package minidoc
 
 import (
+	"fmt"
 	"github.com/7onetella/minidoc/config"
+	"github.com/google/uuid"
 	"github.com/mitchellh/go-homedir"
 	"strings"
 )
@@ -46,6 +48,13 @@ func (s *Search) HandleCommand(command string) {
 		generatedDocPath := home + config.Config().GetString("generated_doc_path")
 
 		markdownFilePath := generatedDocPath + filename + ".md"
+
+		// if the extension is pdf, write to tmp folder, don't write to generatedDocPath
+		if extension == "pdf" {
+			UUID := uuid.New().String()
+			markdownFilePath = fmt.Sprintf("/tmp/%s", UUID)
+		}
+
 		log.Debugf("generating %s", markdownFilePath)
 
 		markdown := ""
@@ -93,12 +102,15 @@ func (s *Search) HandleCommand(command string) {
 				s.App.StatusBar.SetText("[red]opening pdf: " + err.Error() + "[white]")
 				return
 			}
+
+			// delete temporary markdown in /tmp folder
+			DeleteFile(markdownFilePath)
 			return
 		}
 
 		err = Exec([]string{"open", markdownFilePath})
 		if err != nil {
-			s.App.StatusBar.SetText("[red]opening pdf: " + err.Error() + "[white]")
+			s.App.StatusBar.SetText("[red]opening markdown: " + err.Error() + "[white]")
 			return
 		}
 
