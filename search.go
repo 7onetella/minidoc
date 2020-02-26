@@ -98,11 +98,12 @@ func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKe
 		if len(text) > 0 {
 			terms = strings.Split(text, " ")
 		}
-		if terms == nil {
-			return event
-		}
 
 		if event.Key() == tcell.KeyEnter {
+			if terms == nil {
+				return event
+			}
+
 			// if term0 starts with @ and terms length is 1 then disregard enter
 			if len(terms) == 0 && strings.HasPrefix(terms[0], "@") {
 				return event
@@ -119,12 +120,11 @@ func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKe
 		}
 
 		if event.Key() == tcell.KeyTab {
-			if len(terms) == 1 && strings.HasPrefix(terms[0], "@") {
-				return event
-			}
 			log.Debug("tab pressed from search bar")
-			s.GoToSearchResult()
-			return nil
+			if s.ResultList.GetRowCount() > 0 {
+				s.GoToSearchResult()
+				return nil
+			}
 		}
 
 		if event.Key() == tcell.KeyCtrlSpace {
@@ -453,6 +453,7 @@ func (s *Search) SelectAllRows() {
 			doc.SetIsSelected(false)
 		}
 		s.ResultList.UpdateRow(i, doc)
+		s.App.ForceDraw()
 	}
 }
 
@@ -473,6 +474,7 @@ func (s *Search) ToggleAllRows() {
 		_, err = s.App.DataHandler.Write(doc)
 		if err == nil {
 			s.ResultList.UpdateRow(i, doc)
+			s.App.ForceDraw()
 		}
 	}
 }
