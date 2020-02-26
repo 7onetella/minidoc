@@ -8,6 +8,29 @@ import (
 	"syscall"
 )
 
+func OpenFileIfNoneExist(filepath, content string) error {
+	file, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+	if err != nil {
+		log.Errorf("creating file: %v", err)
+		return err
+	}
+	defer file.Close()
+	_, err = fmt.Fprintf(file, content)
+	if err != nil {
+		log.Errorf("writing content: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DoesBinaryExists(binary string) bool {
+	binary, lookErr := exec.LookPath("vim")
+	if lookErr != nil {
+		return false
+	}
+	return true
+}
+
 func WriteToFile(filepath, content string) (done bool) {
 	file, err := os.Create(filepath)
 	if err != nil {

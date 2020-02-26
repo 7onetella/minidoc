@@ -186,7 +186,7 @@ func (d *ToDoDoc) GetAvailableActions() string {
 
 func (d *ToDoDoc) GetMarkdown() string {
 	return fmt.Sprintf(`###%s
-  %s`, d.Task)
+  %s`, d.Title, d.Task)
 }
 
 func (d *ToDoDoc) GetTitle() string {

@@ -54,6 +54,7 @@ func readViperConfig(appName string) *viper.Viper {
 	v.SetDefault("json_logs", false)
 	v.SetDefault("loglevel", "info")
 	v.SetDefault("log_filename", "minidoc.log")
+	v.SetDefault("generated_doc_path", "/Documents/")
 
 	// Find home directory.
 	home, err := homedir.Dir()

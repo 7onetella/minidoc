@@ -1,0 +1,4 @@
+json_logs: false
+loglevel:  debug
+log_filename: .minidoc/minidoc.log
+generated_doc_path: /Documents/

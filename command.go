@@ -1,13 +1,20 @@
 package minidoc
 
-import "strings"
+import (
+	"github.com/7onetella/minidoc/config"
+	"github.com/mitchellh/go-homedir"
+	"strings"
+)
 
 func (s *Search) HandleCommand(command string) {
+	// remove @symbol
 	command = command[1:]
+
 	terms := strings.Split(command, " ")
 	verb := terms[0]
 	log.Debugf("command terms %s", terms)
 
+	// if only @verb is present, don't process further
 	if len(terms) == 1 {
 		return
 	}
@@ -22,32 +29,79 @@ func (s *Search) HandleCommand(command string) {
 			defer s.App.Draw()
 		}
 	case "generate":
-		outputDoctype := terms[1]
-		if outputDoctype == "markdown" {
-			filepath := terms[2]
-			markdown := ""
-			for i := 0; i < s.ResultList.GetRowCount(); i++ {
-				log.Debugf("current row %d", s.CurrentRowIndex)
-				doc, err := s.LoadMiniDocFromDB(i)
-				if err != nil {
-					log.Errorf("minidoc from failed: %v", err)
-					return
-				}
+		str := terms[1]
 
-				if !doc.IsSelected() {
-					log.Debugf("row %d not selected skipping", i)
-					continue
-				}
+		home, err := homedir.Dir()
+		if err != nil {
+			log.Errorf("finding home : %s", err)
+		}
+		tokens := strings.Split(str, ".")
+		if len(tokens) == 1 {
+			s.App.StatusBar.SetText("[red]please specify file extension[white]")
+			return
+		}
 
-				markdown += doc.GetMarkdown() + "\n\n"
-			}
-			if WriteToFile(filepath, markdown) {
+		filename := tokens[0]
+		extension := tokens[1]
+		generatedDocPath := home + config.Config().GetString("generated_doc_path")
+
+		markdownFilePath := generatedDocPath + filename + ".md"
+		log.Debugf("generating %s", markdownFilePath)
+
+		markdown := ""
+		for i := 0; i < s.ResultList.GetRowCount(); i++ {
+			log.Debugf("current row %d", s.CurrentRowIndex)
+			doc, err := s.LoadMiniDocFromDB(i)
+			if err != nil {
+				log.Errorf("minidoc from failed: %v", err)
 				return
 			}
-			OpenVim(s.App, filepath)
-			s.App.StatusBar.SetText("[white]markdown generated[white]")
 
+			if !doc.IsSelected() {
+				log.Debugf("row %d not selected skipping", i)
+				continue
+			}
+
+			markdown += doc.GetMarkdown() + "\n\n"
 		}
+
+		err = OpenFileIfNoneExist(markdownFilePath, markdown)
+		if err != nil {
+			s.App.StatusBar.SetText("[red]generating markdown: " + err.Error() + "[white]")
+			return
+		}
+		OpenVim(s.App, markdownFilePath)
+		s.App.StatusBar.SetText("[yellow]markdown generated[white]")
+
+		// convert markdown to pdf if the extension is pdf
+		if extension == "pdf" {
+			// does pandoc exist in path?
+			if !DoesBinaryExists("pandoc") {
+				s.App.StatusBar.SetText("[red]please install pandoc to generate pdf[white]")
+				return
+			}
+			pdfFiePath := generatedDocPath + filename + ".pdf"
+			err := Exec([]string{"pandoc", "-s", markdownFilePath, "-o", pdfFiePath})
+			if err != nil {
+				s.App.StatusBar.SetText("[red]generating pdf: " + err.Error() + "[white]")
+				return
+			}
+			s.App.StatusBar.SetText("[yellow]pdf generated[white]")
+
+			err = Exec([]string{"open", pdfFiePath})
+			if err != nil {
+				s.App.StatusBar.SetText("[red]opening pdf: " + err.Error() + "[white]")
+				return
+			}
+			return
+		}
+
+		err = Exec([]string{"open", markdownFilePath})
+		if err != nil {
+			s.App.StatusBar.SetText("[red]opening pdf: " + err.Error() + "[white]")
+			return
+		}
+
 	case "list":
 		doctype := terms[1]
 		docs, err := s.App.DataHandler.BucketHandler.ReadAll(doctype)
