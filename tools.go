@@ -3,9 +3,11 @@ package minidoc
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 )
 
 func OpenFileIfNoneExist(filepath, content string) error {
@@ -141,4 +143,21 @@ func contains(list []string, s string) bool {
 		}
 	}
 	return false
+}
+
+func HTTPGet(url string) ([]byte, error) {
+	client := http.Client{
+		Timeout: time.Second * 3,
+	}
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("downloading status code: %d", resp.StatusCode)
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+
+	return data, err
 }

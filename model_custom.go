@@ -55,7 +55,7 @@ func (d *URLDoc) GetAvailableActions() string {
 }
 
 func (d *URLDoc) GetMarkdown() string {
-	return fmt.Sprintf(`link: [%s](%s)`, d.Title, d.URL)
+	return fmt.Sprintf(`[%s](%s)`, d.Title, d.URL)
 }
 
 func (d *URLDoc) GetDisplayFields() []string {

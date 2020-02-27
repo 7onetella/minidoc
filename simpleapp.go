@@ -5,11 +5,11 @@ import (
 	l "github.com/7onetella/minidoc/log"
 	"github.com/gdamore/tcell"
 	"github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
-
 	"github.com/rivo/tview"
+	"github.com/sirupsen/logrus"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func init() {
@@ -108,7 +108,6 @@ func NewSimpleApp(opts ...SimpleAppOption) *SimpleApp {
 		false,
 	}
 
-	status.SetText("[white:darkcyan] Ctrl-h <- navigate left | Ctrl-l <- navigate right[white]")
 	app.DebugView = NewDebugView(app)
 
 	app.Rows = tview.NewFlex().SetDirection(tview.FlexRow).
@@ -145,6 +144,10 @@ func NewSimpleApp(opts ...SimpleAppOption) *SimpleApp {
 	app.Layout = layout
 
 	app.SetInputCapture(app.GetInputCaptureFunc())
+
+	app.Draw()
+	app.SetStatus("[white:darkcyan] Ctrl-h <- navigate left | Ctrl-l <- navigate right[white]" +
+		"                                                                                                     ")
 
 	return app
 }
@@ -256,6 +259,27 @@ func (app *SimpleApp) ClearDebug() {
 func (app *SimpleApp) ClearMenu() {
 	app.MenuBar.Clear()
 	app.Draw()
+}
+
+func (app *SimpleApp) SetStatus(text string, rightsides ...string) {
+	_, _, width, _ := app.Layout.GetRect()
+
+	rightsidesLength := 0
+	if len(rightsides) > 0 {
+		rightsidesLength = len(strings.Join(rightsides, " "))
+	}
+	app.StatusBar.SetText(text)
+	rawText := app.StatusBar.GetText(true)
+	rawText = strings.ReplaceAll(rawText, "\n", "")
+
+	textLength := len(rawText)
+	paddingWidth := width - textLength - rightsidesLength
+	padding := fmt.Sprintf("%-*s", paddingWidth, "")
+	fmt.Fprint(app.StatusBar, padding)
+
+	for _, rightside := range rightsides {
+		fmt.Fprint(app.StatusBar, rightside)
+	}
 }
 
 func newTextViewBar() *tview.TextView {

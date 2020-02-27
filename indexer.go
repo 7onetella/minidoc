@@ -111,7 +111,9 @@ func (ih *IndexHandler) Search(queryString string) ([]MiniDoc, string) {
 		log.Errorf("index search error: %v", err)
 		return nil, ""
 	}
-	stat := fmt.Sprintf(" %d matches, showing %d through %d, took %s\n", sr.Total, sr.Request.From+1, sr.Request.From+len(sr.Hits), sr.Took)
+
+	took := strings.ReplaceAll(sr.Took.String(), "µ", "u")
+	stat := fmt.Sprintf("%d matches, showing %d through %d, took %s", sr.Total, sr.Request.From+1, sr.Request.From+len(sr.Hits), took)
 
 	docs := make([]MiniDoc, sr.Hits.Len())
 	for ri, hit := range sr.Hits {
