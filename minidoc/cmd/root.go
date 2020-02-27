@@ -2,17 +2,18 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/7onetella/minidoc"
+	"github.com/gdamore/tcell"
+
 	"github.com/mitchellh/go-homedir"
 	"os"
 
-	"github.com/7onetella/minidoc"
-	"github.com/gdamore/tcell"
 	"github.com/spf13/cobra"
 )
 
 var DevMode bool
 
-var reindex bool
+var Reindex bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -27,13 +28,14 @@ to quickly create a Cobra application.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	 Run: func(cmd *cobra.Command, args []string) {
-		 launchMinidoc()
+		 LaunchMinidoc()
 	 },
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -47,13 +49,23 @@ func init() {
 	// when this action is called directly.
 	flags.BoolVar(&DevMode, "dev",false, "development mode")
 
-	flags.BoolVar(&reindex, "reindex",false, "reindex docs")
+	flags.BoolVar(&Reindex, "reindex",false, "reindex docs")
 
 }
 
-func launchMinidoc() {
+func GetMinidocHome(devMode bool) string {
+	homedir, _ := homedir.Dir() // return path with slash at the end
+	minidocHome := homedir + "/.minidoc"
 
-	minidocHome := CreateMinidocHomeIfNotFound(DevMode)
+	if devMode {
+		minidocHome = ".minidoc"
+	}
+	return minidocHome
+}
+
+func LaunchMinidoc() {
+
+	minidocHome := GetMinidocHome(DevMode)
 
 	pageItems := []minidoc.PageItem{minidoc.NewSearch(), minidoc.NewHelp()}
 	options := []minidoc.SimpleAppOption{
@@ -61,7 +73,7 @@ func launchMinidoc() {
 		minidoc.WithSimpleAppConfirmExit(false),
 		minidoc.WithSimpleAppPages(pageItems),
 		minidoc.WithSimpleAppDataFolderPath(minidocHome),
-		minidoc.WithSimpleAppDocsReindexed(reindex),
+		minidoc.WithSimpleAppDocsReindexed(Reindex),
 	}
 	if DevMode {
 		options = append(options, minidoc.WithSimpleAppDebugOn())
@@ -72,6 +84,7 @@ func launchMinidoc() {
 	if err := app.SetRoot(app.Layout, true).Run(); err != nil {
 		panic(err)
 	}
+
 }
 
 func GetWithSimpleAppDelegateKeyEvent() minidoc.SimpleAppOption {
@@ -85,15 +98,4 @@ func GetWithSimpleAppDelegateKeyEvent() minidoc.SimpleAppOption {
 		}
 		return event
 	})
-}
-
-func CreateMinidocHomeIfNotFound(devMode bool) string {
-	homedir, _ := homedir.Dir() // return path with slash at the end
-	minidocHome := homedir + "/.minidoc"
-
-	if devMode {
-		minidocHome = ".minidoc"
-	}
-	os.MkdirAll(minidocHome, os.ModePerm)
-	return minidocHome
 }
