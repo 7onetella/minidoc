@@ -28,7 +28,7 @@ $ go build && ./minidoc
 TODO: boltdb is used so testing seems to block
 
 ## Demo - Asciicast
-[![asciicast](https://asciinema.org/a/MoSChtTE6KuLhzg4w0TJl8Puv.svg)](https://asciinema.org/a/Irh5pVBPW0SIRJqLATs6EFTa1)
+[![asciicast](https://asciinema.org/a/MoSChtTE6KuLhzg4w0TJl8Puv.svg)](https://asciinema.org/a/305646)
 
 ## Design decision
 
