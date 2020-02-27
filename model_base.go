@@ -121,7 +121,7 @@ func (m *BaseDoc) GetMarkdown() string {
 }
 
 func (M *BaseDoc) GetAvailableActions() string {
-	return "😊"
+	return "*"
 }
 
 func (m *BaseDoc) GetDisplayFields() []string {

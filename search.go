@@ -190,7 +190,7 @@ func (s *Search) Search(searchby string) bool {
 		s.debug("result is empty")
 		return false
 	}
-	s.App.StatusBar.SetText(stat)
+	s.App.StatusBar.SetText("[white:darkcyan]" + stat + "[white]")
 
 	s.UpdateResult(result)
 	return false
@@ -295,6 +295,7 @@ func (s *Search) GoToSearchBar(clear bool) {
 		s.SearchBar.Clear(true)
 		s.InitSearchBar()
 	}
+	s.App.StatusBar.SetText("[white:darkcyan] Ctrl-h <- navigate left | Ctrl-l <- navigate right[white]")
 	s.App.Draw()
 	s.App.SetFocus(s.SearchBar)
 }
@@ -342,7 +343,7 @@ func (s *Search) Preview(direction int) {
 
 	// move keys like j and k controls the selection
 	// result list select only makes sense for shifting the focus over and selecting
-	s.App.StatusBar.SetText(fmt.Sprintf("%d | %s", s.CurrentRowIndex, doc.GetAvailableActions()))
+	s.App.StatusBar.SetText(fmt.Sprintf("[white:darkcyan] t <- toogle | spacebar <- select | %s | row %d", doc.GetAvailableActions(), s.CurrentRowIndex))
 
 	json := JsonMapFrom(doc)
 	jh := NewJsonMapWrapper(json)

@@ -111,7 +111,7 @@ func (ih *IndexHandler) Search(queryString string) ([]MiniDoc, string) {
 		log.Errorf("index search error: %v", err)
 		return nil, ""
 	}
-	stat := fmt.Sprintf("%d matches, showing %d through %d, took %s\n", sr.Total, sr.Request.From+1, sr.Request.From+len(sr.Hits), sr.Took)
+	stat := fmt.Sprintf(" %d matches, showing %d through %d, took %s\n", sr.Total, sr.Request.From+1, sr.Request.From+len(sr.Hits), sr.Took)
 
 	docs := make([]MiniDoc, sr.Hits.Len())
 	for ri, hit := range sr.Hits {
@@ -135,8 +135,8 @@ func (ih *IndexHandler) Search(queryString string) ([]MiniDoc, string) {
 		}
 
 		log.Debug("# of fragments: " + strconv.Itoa(len(hit.Fragments)))
-		for _, fragments := range hit.Fragments {
-			rv := ""
+		for fieldName, fragments := range hit.Fragments {
+			rv := "[" + fieldName + "[] "
 			for _, fragment := range fragments {
 				// [43m [0m
 				fragment = strings.ReplaceAll(fragment, "[43m", "[yellow]")
@@ -167,7 +167,7 @@ func IndexMapping() (*mapping.IndexMappingImpl, error) {
 
 	indexMapping := bleve.NewIndexMapping()
 	for _, doctype := range doctypes {
-		documentMapping := DocumentMapping(indexedFields[doctype])
+		documentMapping := DocumentMapping(indexedFields[doctype], excludedFields[doctype])
 		indexMapping.AddDocumentMapping(doctype, documentMapping)
 	}
 	indexMapping.TypeField = "type"
@@ -176,13 +176,18 @@ func IndexMapping() (*mapping.IndexMappingImpl, error) {
 	return indexMapping, nil
 }
 
-func DocumentMapping(indexedFields []string) *mapping.DocumentMapping {
+func DocumentMapping(indexedFields []string, excludedFields []string) *mapping.DocumentMapping {
 	englishTextFieldMapping := bleve.NewTextFieldMapping()
 	englishTextFieldMapping.Analyzer = en.AnalyzerName
 
 	documentMapping := bleve.NewDocumentMapping()
 	for _, f := range indexedFields {
 		documentMapping.AddFieldMappingsAt(f, englishTextFieldMapping)
+	}
+
+	disabledFieldMapping := bleve.NewDocumentDisabledMapping()
+	for _, f := range excludedFields {
+		documentMapping.AddSubDocumentMapping(f, disabledFieldMapping)
 	}
 
 	return documentMapping

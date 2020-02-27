@@ -26,39 +26,45 @@ func (h *Help) SetApp(app *SimpleApp) {
 
 func (h *Help) Page() (title string, content tview.Primitive) {
 	fmt.Fprintf(h.Content, `
+    [white:darkcyan][List of shortcut keys for the following scope[][white]
 
-    [yellow]List of shortcut keys for the following scope[white]
+    [black:darkcyan][Entire App[][white]
 
-    [darkcyan]Entire App[white]
-
-       Ctrl-C  <-  Exit
-       Ctrl-N  <-  New note
-       Ctrl-H  <-  Navigate to left menu item
-       Ctrl-L  <-  Navigate to right menu item
-       Ctrl-O  <-  Show debug view
-       Ctrl-D  <-  Go to debug view and back
-       Ctrl-E  <-  Clear debug view
+       Ctrl-c  <-  Exit
+       Ctrl-n  <-  New note
+       Ctrl-h  <-  Navigate to left menu item
+       Ctrl-l  <-  Navigate to right menu item
+       Ctrl-o  <-  Show debug view
+       Ctrl-d  <-  Go to debug view and back
+       Ctrl-e  <-  Clear debug view
        Tab     <-  Switch between various views
 
-    [darkcyan]Search Bar[white]
+    [black:darkcyan][Search Bar[][white]
 
-       Ctrl-U  <-  Delete the entire line.
-	   Ctrl-A  <-  Move to the beginning of the line.
-	   Ctrl-E  <-  Move to the end of the line.
+       Ctrl-n      <-  New note
+       Ctrl-Space  <-  Delete the entire line.
+       Ctrl-u      <-  Delete the entire line.
+	   Ctrl-a      <-  Move to the beginning of the line.
+	   Ctrl-e      <-  Move to the end of the line.
 	   Alt-left, Alt-b   <-  Move left by one word.
 	   Alt-right, Alt-f  <-  Move right by one word.
-	   Ctrl-K  <-  Delete from the cursor to the end of the line.
-	   Ctrl-W  <-  Delete the last word before the cursor.
+	   Ctrl-k      <-  Delete from the cursor to the end of the line.
+	   Ctrl-w      <-  Delete the last word before the cursor.
 
-    [darkcyan]Search Result Rows[white]
+    [black:darkcyan][Search Result Rows[][white]
 
+       Tab         <-  Go back to search bar
 	   j           <-  Move down
        k           <-  Move up
        i           <-  Load currently selected row in the edit view
+       e           <-  Edit vim editable fields, e.g. note
+	   t           <-  Toggle toggle-able field
        spacebar    <-  Select row
-       Ctrl-D      <-  Batch delete selected rows
-       Tab         <-  Go back to search bar
-
+       Ctrl-j      <-  Move row down
+       Ctrl-k      <-  Move row up
+       Ctrl-d      <-  Batch delete selected rows
+       Ctrl-a      <-  Select all / Deselect all
+       Ctrl-t      <-  Toggle all / Detoggle all
 `)
 	return "Help", h.Content
 }

@@ -6,12 +6,18 @@ import (
 	"strings"
 )
 
-var doctypes = []string{"url", "note", "todo"}
+var doctypes = []string{"url", "note", "todo", "shortcut"}
 
 var indexedFields = map[string][]string{
 	"url":  {"title", "description", "tags"},
 	"note": {"title", "note", "tags"},
 	"todo": {"task", "done", "tags"},
+}
+
+var excludedFields = map[string][]string{
+	"url":  {"url"},
+	"note": {},
+	"todo": {},
 }
 
 // --------------------------------------------------------------------------------
@@ -45,7 +51,7 @@ func (d *URLDoc) HandleEvent(event *tcell.EventKey) {
 }
 
 func (d *URLDoc) GetAvailableActions() string {
-	return "[yellow]o[white]pen url in browser | [yellow]t[white]oggle watch later"
+	return "o <- open url in browser | t <- toggle watch later"
 }
 
 func (d *URLDoc) GetMarkdown() string {
@@ -114,7 +120,7 @@ func (d *NoteDoc) GetDisplayFields() []string {
 }
 
 func (d *NoteDoc) GetAvailableActions() string {
-	return ""
+	return "*"
 }
 
 func (d *NoteDoc) GetEditFields() []string {
@@ -181,7 +187,7 @@ func (d *ToDoDoc) HandleEvent(event *tcell.EventKey) {
 }
 
 func (d *ToDoDoc) GetAvailableActions() string {
-	return "[yellow]t[white] <= toggle done"
+	return "t <- toggle done"
 }
 
 func (d *ToDoDoc) GetMarkdown() string {

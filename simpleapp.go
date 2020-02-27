@@ -108,7 +108,7 @@ func NewSimpleApp(opts ...SimpleAppOption) *SimpleApp {
 		false,
 	}
 
-	status.SetText("Ctrl-L for help")
+	status.SetText("[white:darkcyan] Ctrl-h <- navigate left | Ctrl-l <- navigate right[white]")
 	app.DebugView = NewDebugView(app)
 
 	app.Rows = tview.NewFlex().SetDirection(tview.FlexRow).

@@ -42,7 +42,7 @@ func (s *Search) HandleCommand(command string) {
 		}
 		tokens := strings.Split(str, ".")
 		if len(tokens) == 1 {
-			s.App.StatusBar.SetText("[red]please specify file extension[white]")
+			s.App.StatusBar.SetText("[red:white]please specify file extension[white]")
 			return
 		}
 
@@ -79,30 +79,30 @@ func (s *Search) HandleCommand(command string) {
 
 		err = OpenFileIfNoneExist(markdownFilePath, markdown)
 		if err != nil {
-			s.App.StatusBar.SetText("[red]generating content: " + err.Error() + "[white]")
+			s.App.StatusBar.SetText("[red:white]generating content: " + err.Error() + "[white]")
 			return
 		}
 		OpenVim(s.App, markdownFilePath)
-		s.App.StatusBar.SetText("[yellow]content generated[white]")
+		s.App.StatusBar.SetText("[white:darkcyan]content generated[white]")
 
 		// convert content to pdf if the extension is pdf
 		if extension == "pdf" {
 			// does pandoc exist in path?
 			if !DoesBinaryExists("pandoc") {
-				s.App.StatusBar.SetText("[red]please install pandoc to generate pdf[white]")
+				s.App.StatusBar.SetText("[red:white]please install pandoc to generate pdf[white]")
 				return
 			}
 			pdfFiePath := generatedDocPath + filename + ".pdf"
 			err := Exec([]string{"pandoc", "-s", markdownFilePath, "-o", pdfFiePath})
 			if err != nil {
-				s.App.StatusBar.SetText("[red]generating pdf: " + err.Error() + "[white]")
+				s.App.StatusBar.SetText("[red:white]generating pdf: " + err.Error() + "[white]")
 				return
 			}
-			s.App.StatusBar.SetText("[yellow]pdf generated[white]")
+			s.App.StatusBar.SetText("[white:darkcyan]pdf generated[white]")
 
 			err = Exec([]string{"open", pdfFiePath})
 			if err != nil {
-				s.App.StatusBar.SetText("[red]opening pdf: " + err.Error() + "[white]")
+				s.App.StatusBar.SetText("[red:white]opening pdf: " + err.Error() + "[white]")
 				return
 			}
 
@@ -113,7 +113,7 @@ func (s *Search) HandleCommand(command string) {
 
 		err = Exec([]string{"open", markdownFilePath})
 		if err != nil {
-			s.App.StatusBar.SetText("[red]opening content: " + err.Error() + "[white]")
+			s.App.StatusBar.SetText("[red:white]opening content: " + err.Error() + "[white]")
 			return
 		}
 
@@ -135,7 +135,7 @@ func (s *Search) HandleCommand(command string) {
 		s.SelectRow(0)
 		s.App.SetFocus(s.SearchBar)
 
-		s.App.StatusBar.SetText("[white]listing docs by type " + doctype)
+		s.App.StatusBar.SetText("[white:darkcyan]listing docs by type '" + doctype + "'")
 	case "tag":
 		tags := terms[1:]
 		for i := 0; i < s.ResultList.GetRowCount(); i++ {
@@ -206,7 +206,7 @@ func (s *Search) HandleCommand(command string) {
 		}
 		tokens := strings.Split(str, ".")
 		if len(tokens) == 1 {
-			s.App.StatusBar.SetText("[red]please specify file extension[white]")
+			s.App.StatusBar.SetText("[red:white]please specify file extension[white]")
 			return
 		}
 
@@ -244,14 +244,14 @@ func (s *Search) HandleCommand(command string) {
 
 		err = OpenFileIfNoneExist(backupFilePath, content)
 		if err != nil {
-			s.App.StatusBar.SetText("[red]exporting content: " + err.Error() + "[white]")
+			s.App.StatusBar.SetText("[red:white]exporting content: " + err.Error() + "[white]")
 			return
 		}
-		s.App.StatusBar.SetText("[yellow]exporting done[white]")
+		s.App.StatusBar.SetText("[white:darkcyan]exporting done[white]")
 
 		err = Exec([]string{"open", backupFilePath})
 		if err != nil {
-			s.App.StatusBar.SetText("[red]opening exported: " + err.Error() + "[white]")
+			s.App.StatusBar.SetText("[red:white]opening exported: " + err.Error() + "[white]")
 			return
 		}
 	case "import":
@@ -265,7 +265,7 @@ func (s *Search) HandleCommand(command string) {
 		generatedDocPath := home + config.Config().GetString("generated_doc_path")
 		tokens := strings.Split(str, ".")
 		if len(tokens) == 1 {
-			s.App.StatusBar.SetText("[red]please specify file extension[white]")
+			s.App.StatusBar.SetText("[red:white]please specify file extension[white]")
 			return
 		}
 
@@ -304,7 +304,7 @@ func (s *Search) HandleCommand(command string) {
 			doc.SetID(0)
 			s.App.DataHandler.Write(doc)
 		}
-		s.App.StatusBar.SetText("[yellow]importing done[white]")
+		s.App.StatusBar.SetText("[white:darkcyan]importing done[white]")
 	}
 }
 
