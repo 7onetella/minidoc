@@ -1,10 +1,13 @@
 package minidoc
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"github.com/7onetella/minidoc/config"
 	"github.com/google/uuid"
 	"github.com/mitchellh/go-homedir"
+	"os"
 	"strings"
 )
 
@@ -76,13 +79,13 @@ func (s *Search) HandleCommand(command string) {
 
 		err = OpenFileIfNoneExist(markdownFilePath, markdown)
 		if err != nil {
-			s.App.StatusBar.SetText("[red]generating markdown: " + err.Error() + "[white]")
+			s.App.StatusBar.SetText("[red]generating content: " + err.Error() + "[white]")
 			return
 		}
 		OpenVim(s.App, markdownFilePath)
-		s.App.StatusBar.SetText("[yellow]markdown generated[white]")
+		s.App.StatusBar.SetText("[yellow]content generated[white]")
 
-		// convert markdown to pdf if the extension is pdf
+		// convert content to pdf if the extension is pdf
 		if extension == "pdf" {
 			// does pandoc exist in path?
 			if !DoesBinaryExists("pandoc") {
@@ -103,14 +106,14 @@ func (s *Search) HandleCommand(command string) {
 				return
 			}
 
-			// delete temporary markdown in /tmp folder
+			// delete temporary content in /tmp folder
 			DeleteFile(markdownFilePath)
 			return
 		}
 
 		err = Exec([]string{"open", markdownFilePath})
 		if err != nil {
-			s.App.StatusBar.SetText("[red]opening markdown: " + err.Error() + "[white]")
+			s.App.StatusBar.SetText("[red]opening content: " + err.Error() + "[white]")
 			return
 		}
 
@@ -194,6 +197,114 @@ func (s *Search) HandleCommand(command string) {
 
 		}
 		s.App.StatusBar.SetText("[white]untagged[white]")
+	case "export":
+		str := terms[1]
+
+		home, err := homedir.Dir()
+		if err != nil {
+			log.Errorf("finding home : %s", err)
+		}
+		tokens := strings.Split(str, ".")
+		if len(tokens) == 1 {
+			s.App.StatusBar.SetText("[red]please specify file extension[white]")
+			return
+		}
+
+		filename := tokens[0]
+		extension := tokens[1]
+
+		generatedDocPath := home + config.Config().GetString("generated_doc_path")
+
+		backupFilePath := generatedDocPath + filename + "." + extension
+
+		log.Debugf("exporting %s", backupFilePath)
+
+		content := ""
+		for i := 0; i < s.ResultList.GetRowCount(); i++ {
+			log.Debugf("current row %d", s.CurrentRowIndex)
+			doc, err := s.LoadMiniDocFromDB(i)
+			if err != nil {
+				log.Errorf("minidoc from failed: %v", err)
+				return
+			}
+
+			if !doc.IsSelected() {
+				log.Debugf("row %d not selected skipping", i)
+				continue
+			}
+
+			jsonBytes, err := json.Marshal(doc)
+			if err != nil {
+				log.Errorf("marshalling doc: %v", err)
+				return
+			}
+
+			content += string(jsonBytes) + "\n"
+		}
+
+		err = OpenFileIfNoneExist(backupFilePath, content)
+		if err != nil {
+			s.App.StatusBar.SetText("[red]exporting content: " + err.Error() + "[white]")
+			return
+		}
+		s.App.StatusBar.SetText("[yellow]exporting done[white]")
+
+		err = Exec([]string{"open", backupFilePath})
+		if err != nil {
+			s.App.StatusBar.SetText("[red]opening exported: " + err.Error() + "[white]")
+			return
+		}
+	case "import":
+		str := terms[1]
+
+		home, err := homedir.Dir()
+		if err != nil {
+			log.Errorf("finding home : %s", err)
+		}
+
+		generatedDocPath := home + config.Config().GetString("generated_doc_path")
+		tokens := strings.Split(str, ".")
+		if len(tokens) == 1 {
+			s.App.StatusBar.SetText("[red]please specify file extension[white]")
+			return
+		}
+
+		filename := tokens[0]
+		extension := tokens[1]
+
+		backupFilePath := generatedDocPath + filename + "." + extension
+
+		log.Debugf("importing %s", backupFilePath)
+
+		file, err := os.Open(backupFilePath)
+		if err != nil {
+			log.Errorf("opening: %v", err)
+			return
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			line = strings.TrimSpace(line)
+
+			var jsonMap interface{}
+			err = json.Unmarshal([]byte(line), &jsonMap)
+			if err != nil {
+				log.Errorf("unmarshaling json=%v", jsonMap)
+				return
+			}
+
+			doc, err := MiniDocFrom(jsonMap)
+			if err != nil {
+				log.Errorf("minidoc from doc=%v", doc)
+				return
+			}
+			// set the id to 0 so new sequence will be generated
+			doc.SetID(0)
+			s.App.DataHandler.Write(doc)
+		}
+		s.App.StatusBar.SetText("[yellow]importing done[white]")
 	}
 }
 

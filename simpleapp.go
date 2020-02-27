@@ -1,14 +1,23 @@
 package minidoc
 
 import (
+	"fmt"
 	l "github.com/7onetella/minidoc/log"
 	"github.com/gdamore/tcell"
+	"github.com/mitchellh/go-homedir"
+	"github.com/sirupsen/logrus"
+
 	"github.com/rivo/tview"
 	"os"
 	"strconv"
 )
 
-var log = l.GetNewLogrusLogger()
+func init() {
+	minidocHome := CreateMinidocHomeIfNotFound()
+	log = l.GetNewLogrusLogger(minidocHome)
+}
+
+var log *logrus.Logger
 
 // SimpleApp comes with the menu and debug pane
 type SimpleApp struct {
@@ -197,8 +206,6 @@ func (app *SimpleApp) Exit() {
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			if buttonLabel == "Quit" {
 				app.Stop()
-				l.Logfile.Sync()
-				l.Logfile.Close()
 				os.Exit(0)
 			} else {
 				if err := app.SetRoot(app.Layout, true).Run(); err != nil {
@@ -213,8 +220,6 @@ func (app *SimpleApp) Exit() {
 		}
 	}
 	app.Stop()
-	l.Logfile.Sync()
-	l.Logfile.Close()
 	os.Exit(0)
 }
 
@@ -258,4 +263,22 @@ func newTextViewBar() *tview.TextView {
 		SetDynamicColors(true).
 		SetRegions(true).
 		SetWrap(false)
+}
+
+func CreateMinidocHomeIfNotFound() string {
+	homedir, _ := homedir.Dir() // return path with slash at the end
+	minidocHome := homedir + "/.minidoc"
+
+	if contains(os.Args, "--dev") {
+		pwd, err := os.Getwd()
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+
+		minidocHome = pwd + "/.minidoc"
+	}
+
+	//fmt.Println("creating " + minidocHome)
+	os.MkdirAll(minidocHome, os.ModePerm)
+	return minidocHome
 }

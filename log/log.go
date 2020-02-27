@@ -38,6 +38,7 @@ type Logger interface {
 }
 
 var defaultLogger *logrus.Logger
+var minidocHome string
 
 func init() {
 	//defaultLogger = newLogrusLogger(config.Config())
@@ -48,7 +49,9 @@ func NewLogger(cfg config.Provider) *logrus.Logger {
 	return newLogrusLogger(cfg)
 }
 
-func GetNewLogrusLogger() *logrus.Logger {
+func GetNewLogrusLogger(home string) *logrus.Logger {
+	minidocHome = home
+
 	if defaultLogger != nil {
 		return defaultLogger
 	}
@@ -74,9 +77,15 @@ func newLogrusLogger(cfg config.Provider) *logrus.Logger {
 	})
 
 	filename := cfg.GetString("log_filename")
-	f, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE, 0755)
+	//pwd, err := os.Getwd()
+	//if err != nil {
+	//	fmt.Println(err.Error())
+	//}
+	//fmt.Println("pwd: " + pwd)
+
+	f, err := os.OpenFile(minidocHome+"/"+filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
-		fmt.Println("error while opening log file to write " + err.Error())
+		fmt.Println("opening log file: " + err.Error())
 	}
 	l.SetOutput(f)
 	Logfile = f

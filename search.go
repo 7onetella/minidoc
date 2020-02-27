@@ -61,7 +61,7 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	return "Search", s.Layout
 }
 
-var words = []string{"@new", "@generate", "@tag", "@untag"}
+var words = []string{"@new", "@generate", "@tag", "@untag", "@export", "@import"}
 
 func (s *Search) InitSearchBar() {
 	//log.Debug("resetting search bar")
