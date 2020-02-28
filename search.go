@@ -46,6 +46,7 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	s.Detail.SetBorder(true)
 	s.Detail.SetTitle("Preview")
 	s.Detail.SetDynamicColors(true)
+	s.Detail.SetBorderPadding(0, 1, 2, 2)
 
 	s.Columns = tview.NewFlex().SetDirection(tview.FlexColumn).
 		AddItem(s.ResultList, 0, 5, true).
@@ -360,12 +361,12 @@ func (s *Search) Preview(direction int) {
 		//s.debug("preview field for " + fieldNameCleaned)
 		v := jh.string(fieldName)
 		content += "\n"
-		content += fmt.Sprintf("  [white]%s:[white]", fieldNameCleaned)
+		content += fmt.Sprintf("[white]%s:[white]", fieldNameCleaned)
 		lines := strings.Split(v, "\n")
 		if len(lines) > 1 {
 			content += "\n"
 			for _, line := range lines {
-				content += fmt.Sprintf("  [darkcyan]%s[darkcyan] \n", line)
+				content += fmt.Sprintf("[darkcyan]%s[darkcyan] \n", line)
 			}
 		} else {
 			content += fmt.Sprintf(" [darkcyan]%s[darkcyan] \n", v)
