@@ -46,6 +46,7 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	s.Detail.SetBorder(true)
 	s.Detail.SetTitle("Preview")
 	s.Detail.SetDynamicColors(true)
+	s.Detail.SetBorderPadding(0, 1, 2, 2)
 
 	s.Columns = tview.NewFlex().SetDirection(tview.FlexColumn).
 		AddItem(s.ResultList, 0, 5, true).
@@ -190,7 +191,7 @@ func (s *Search) Search(searchby string) bool {
 		s.debug("result is empty")
 		return false
 	}
-	s.App.StatusBar.SetText("[white:darkcyan]" + stat + "[white]")
+	s.App.SetStatus("[white:darkcyan] " + stat + "[white]")
 
 	s.UpdateResult(result)
 	return false
@@ -295,7 +296,7 @@ func (s *Search) GoToSearchBar(clear bool) {
 		s.SearchBar.Clear(true)
 		s.InitSearchBar()
 	}
-	s.App.StatusBar.SetText("[white:darkcyan] Ctrl-h <- navigate left | Ctrl-l <- navigate right[white]")
+	s.App.SetStatus("[white:darkcyan] Ctrl-h <- navigate left | Ctrl-l <- navigate right[white]")
 	s.App.Draw()
 	s.App.SetFocus(s.SearchBar)
 }
@@ -343,7 +344,7 @@ func (s *Search) Preview(direction int) {
 
 	// move keys like j and k controls the selection
 	// result list select only makes sense for shifting the focus over and selecting
-	s.App.StatusBar.SetText(fmt.Sprintf("[white:darkcyan] t <- toogle | spacebar <- select | %s | row %d", doc.GetAvailableActions(), s.CurrentRowIndex))
+	s.App.SetStatus(fmt.Sprintf("[white:darkcyan] spacebar <- select | %s", doc.GetAvailableActions()), fmt.Sprintf("row %d ", s.CurrentRowIndex))
 
 	json := JsonMapFrom(doc)
 	jh := NewJsonMapWrapper(json)
@@ -360,12 +361,12 @@ func (s *Search) Preview(direction int) {
 		//s.debug("preview field for " + fieldNameCleaned)
 		v := jh.string(fieldName)
 		content += "\n"
-		content += fmt.Sprintf("  [white]%s:[white]", fieldNameCleaned)
+		content += fmt.Sprintf("[white]%s:[white]", fieldNameCleaned)
 		lines := strings.Split(v, "\n")
 		if len(lines) > 1 {
 			content += "\n"
 			for _, line := range lines {
-				content += fmt.Sprintf("  [darkcyan]%s[darkcyan] \n", line)
+				content += fmt.Sprintf("[darkcyan]%s[darkcyan] \n", line)
 			}
 		} else {
 			content += fmt.Sprintf(" [darkcyan]%s[darkcyan] \n", v)

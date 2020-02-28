@@ -42,7 +42,7 @@ func (s *Search) HandleCommand(command string) {
 		}
 		tokens := strings.Split(str, ".")
 		if len(tokens) == 1 {
-			s.App.StatusBar.SetText("[red:white]please specify file extension[white]")
+			s.App.SetStatus("[black:red] please specify file extension[white]")
 			return
 		}
 
@@ -79,30 +79,30 @@ func (s *Search) HandleCommand(command string) {
 
 		err = OpenFileIfNoneExist(markdownFilePath, markdown)
 		if err != nil {
-			s.App.StatusBar.SetText("[red:white]generating content: " + err.Error() + "[white]")
+			s.App.SetStatus("[black:red]generating content: " + err.Error() + "[white]")
 			return
 		}
 		OpenVim(s.App, markdownFilePath)
-		s.App.StatusBar.SetText("[white:darkcyan]content generated[white]")
+		s.App.SetStatus("[white:darkcyan]content generated[white]")
 
 		// convert content to pdf if the extension is pdf
 		if extension == "pdf" {
 			// does pandoc exist in path?
 			if !DoesBinaryExists("pandoc") {
-				s.App.StatusBar.SetText("[red:white]please install pandoc to generate pdf[white]")
+				s.App.SetStatus("[black:red]please install pandoc to generate pdf[white]")
 				return
 			}
 			pdfFiePath := generatedDocPath + filename + ".pdf"
 			err := Exec([]string{"pandoc", "-s", markdownFilePath, "-o", pdfFiePath})
 			if err != nil {
-				s.App.StatusBar.SetText("[red:white]generating pdf: " + err.Error() + "[white]")
+				s.App.SetStatus("[black:red]generating pdf: " + err.Error() + "[white]")
 				return
 			}
-			s.App.StatusBar.SetText("[white:darkcyan]pdf generated[white]")
+			s.App.SetStatus("[white:darkcyan]pdf generated[white]")
 
 			err = Exec([]string{"open", pdfFiePath})
 			if err != nil {
-				s.App.StatusBar.SetText("[red:white]opening pdf: " + err.Error() + "[white]")
+				s.App.SetStatus("[black:red]opening pdf: " + err.Error() + "[white]")
 				return
 			}
 
@@ -113,7 +113,7 @@ func (s *Search) HandleCommand(command string) {
 
 		err = Exec([]string{"open", markdownFilePath})
 		if err != nil {
-			s.App.StatusBar.SetText("[red:white]opening content: " + err.Error() + "[white]")
+			s.App.SetStatus("[black:red]opening content: " + err.Error() + "[white]")
 			return
 		}
 
@@ -135,7 +135,7 @@ func (s *Search) HandleCommand(command string) {
 		s.SelectRow(0)
 		s.App.SetFocus(s.SearchBar)
 
-		s.App.StatusBar.SetText("[white:darkcyan]listing docs by type '" + doctype + "'")
+		s.App.SetStatus("[white:darkcyan] listing docs by type '" + doctype + "'")
 	case "tag":
 		tags := terms[1:]
 		for i := 0; i < s.ResultList.GetRowCount(); i++ {
@@ -162,7 +162,7 @@ func (s *Search) HandleCommand(command string) {
 			doc.SetTags(str)
 			s.App.DataHandler.Write(doc)
 		}
-		s.App.StatusBar.SetText("[white]tagged[white]")
+		s.App.SetStatus("[white]tagged[white]")
 	case "untag":
 		tags := terms[1:]
 		for i := 0; i < s.ResultList.GetRowCount(); i++ {
@@ -196,7 +196,7 @@ func (s *Search) HandleCommand(command string) {
 			}
 
 		}
-		s.App.StatusBar.SetText("[white]untagged[white]")
+		s.App.SetStatus("[white]untagged[white]")
 	case "export":
 		str := terms[1]
 
@@ -206,7 +206,7 @@ func (s *Search) HandleCommand(command string) {
 		}
 		tokens := strings.Split(str, ".")
 		if len(tokens) == 1 {
-			s.App.StatusBar.SetText("[red:white]please specify file extension[white]")
+			s.App.SetStatus("[black:red]please specify file extension[white]")
 			return
 		}
 
@@ -244,68 +244,118 @@ func (s *Search) HandleCommand(command string) {
 
 		err = OpenFileIfNoneExist(backupFilePath, content)
 		if err != nil {
-			s.App.StatusBar.SetText("[red:white]exporting content: " + err.Error() + "[white]")
+			s.App.SetStatus("[black:red]exporting content: " + err.Error() + "[white]")
 			return
 		}
-		s.App.StatusBar.SetText("[white:darkcyan]exporting done[white]")
+		s.App.SetStatus("[white:darkcyan]exporting done[white]")
 
 		err = Exec([]string{"open", backupFilePath})
 		if err != nil {
-			s.App.StatusBar.SetText("[red:white]opening exported: " + err.Error() + "[white]")
+			s.App.SetStatus("[black:red]opening exported: " + err.Error() + "[white]")
 			return
 		}
 	case "import":
 		str := terms[1]
+		isWeb := strings.HasPrefix(str, "http")
+		var errored bool
 
-		home, err := homedir.Dir()
-		if err != nil {
-			log.Errorf("finding home : %s", err)
+		if isWeb {
+			errored = ImportFromWeb(str, s)
+		} else {
+			errored = ImportFile(str, s)
 		}
 
-		generatedDocPath := home + config.Config().GetString("generated_doc_path")
-		tokens := strings.Split(str, ".")
-		if len(tokens) == 1 {
-			s.App.StatusBar.SetText("[red:white]please specify file extension[white]")
+		if errored {
 			return
 		}
 
-		filename := tokens[0]
-		extension := tokens[1]
-
-		backupFilePath := generatedDocPath + filename + "." + extension
-
-		log.Debugf("importing %s", backupFilePath)
-
-		file, err := os.Open(backupFilePath)
-		if err != nil {
-			log.Errorf("opening: %v", err)
-			return
-		}
-		defer file.Close()
-
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := scanner.Text()
-			line = strings.TrimSpace(line)
-
-			var jsonMap interface{}
-			err = json.Unmarshal([]byte(line), &jsonMap)
-			if err != nil {
-				log.Errorf("unmarshaling json=%v", jsonMap)
-				return
-			}
-
-			doc, err := MiniDocFrom(jsonMap)
-			if err != nil {
-				log.Errorf("minidoc from doc=%v", doc)
-				return
-			}
-			// set the id to 0 so new sequence will be generated
-			doc.SetID(0)
-			s.App.DataHandler.Write(doc)
-		}
-		s.App.StatusBar.SetText("[white:darkcyan]importing done[white]")
+		s.App.SetStatus("[white:darkcyan]importing done[white]")
 	}
+}
+
+func ImportFromWeb(str string, s *Search) bool {
+	data, err := HTTPGet(str)
+	if err != nil {
+		s.App.SetStatus(fmt.Sprintf("[black:red]http: %v[white]", err))
+		return true
+	}
+	content := string(data)
+	for _, line := range strings.Split(content, "\n") {
+		errored := ImportLineByLine(line, s)
+		if errored {
+			continue
+		}
+	}
+
+	content = strings.TrimSpace(content)
+	if len(content) == 0 {
+		s.App.SetStatus(fmt.Sprintf("[black:red]downloaded content empty: %v[white]", err))
+		return true
+	}
+	return false
+}
+
+func ImportFile(str string, s *Search) bool {
+	home, err := homedir.Dir()
+	if err != nil {
+		log.Errorf("finding home : %s", err)
+	}
+
+	generatedDocPath := home + config.Config().GetString("generated_doc_path")
+	tokens := strings.Split(str, ".")
+	if len(tokens) == 1 {
+		s.App.SetStatus("[black:red]please specify file extension[white]")
+		return true
+	}
+
+	filename := tokens[0]
+	extension := tokens[1]
+
+	backupFilePath := generatedDocPath + filename + "." + extension
+
+	log.Debugf("importing %s", backupFilePath)
+
+	file, err := os.Open(backupFilePath)
+	if err != nil {
+		log.Errorf("opening: %v", err)
+		s.App.SetStatus(fmt.Sprintf("[black:red]opening: %v[white]", err))
+		return true
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		errored := ImportLineByLine(line, s)
+		if errored {
+			return errored
+		}
+	}
+	return false
+}
+
+func ImportLineByLine(line string, s *Search) bool {
+	var err error
+	line = strings.TrimSpace(line)
+
+	var jsonMap interface{}
+	err = json.Unmarshal([]byte(line), &jsonMap)
+	if err != nil {
+		log.Errorf("unmarshaling json=%v", jsonMap)
+		s.App.SetStatus(fmt.Sprintf("[black:red]unmarshaling: %v[white]", err))
+		return true
+	}
+
+	doc, err := MiniDocFrom(jsonMap)
+	if err != nil {
+		log.Errorf("minidoc from doc=%v", doc)
+		s.App.SetStatus(fmt.Sprintf("[black:red]minidoc from: %v[white]", err))
+		return true
+	}
+	// set the id to 0 so new sequence will be generated
+	doc.SetID(0)
+	s.App.DataHandler.Write(doc)
+	return false
 }
 
 func NewDocFlow(doctype string, app *SimpleApp) error {
