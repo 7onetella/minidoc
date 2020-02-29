@@ -2,6 +2,7 @@ package minidoc
 
 import (
 	"fmt"
+	"github.com/7onetella/minidoc/config"
 	l "github.com/7onetella/minidoc/log"
 	"github.com/gdamore/tcell"
 	"github.com/mitchellh/go-homedir"
@@ -14,6 +15,7 @@ import (
 
 func init() {
 	minidocHome := CreateMinidocHomeIfNotFound()
+	CreateGeneratedDirIfNotFound()
 	log = l.GetNewLogrusLogger(minidocHome)
 }
 
@@ -305,4 +307,14 @@ func CreateMinidocHomeIfNotFound() string {
 	//fmt.Println("creating " + minidocHome)
 	os.MkdirAll(minidocHome, os.ModePerm)
 	return minidocHome
+}
+
+func CreateGeneratedDirIfNotFound() string {
+	cfg := config.Config()
+	generatedDir := cfg.GetString("generated_doc_path")
+	homedir, _ := homedir.Dir() // return path with slash at the end
+	minidocGenDir := homedir + generatedDir
+
+	os.MkdirAll(minidocGenDir, os.ModePerm)
+	return minidocGenDir
 }

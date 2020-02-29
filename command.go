@@ -49,6 +49,9 @@ func (s *Search) HandleCommand(command string) {
 		filename := tokens[0]
 		extension := tokens[1]
 		generatedDocPath := home + config.Config().GetString("generated_doc_path")
+		if !strings.HasSuffix(generatedDocPath, "/") {
+			generatedDocPath += "/"
+		}
 
 		markdownFilePath := generatedDocPath + filename + ".md"
 

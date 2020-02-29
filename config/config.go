@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	//"github.com/7onetella/minidoc/minidoc/cmd"
 )
 
 // Provider defines a set of read-only methods for accessing the application
@@ -54,7 +53,7 @@ func readViperConfig(appName string) *viper.Viper {
 	v.SetDefault("json_logs", false)
 	v.SetDefault("loglevel", "info")
 	v.SetDefault("log_filename", "minidoc.log")
-	v.SetDefault("generated_doc_path", "/Documents/")
+	v.SetDefault("generated_doc_path", "/Documents/minidocs")
 
 	// Find home directory.
 	home, err := homedir.Dir()
