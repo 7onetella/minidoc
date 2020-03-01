@@ -67,7 +67,7 @@ func LaunchMinidoc() {
 
 	minidocHome := GetMinidocHome(DevMode)
 
-	pageItems := []minidoc.PageItem{minidoc.NewSearch(), minidoc.NewHelp()}
+	pageItems := []minidoc.PageItem{minidoc.NewSearch(), minidoc.NewTree(), minidoc.NewHelp()}
 	options := []minidoc.SimpleAppOption{
 		GetWithSimpleAppDelegateKeyEvent(),
 		minidoc.WithSimpleAppConfirmExit(false),
