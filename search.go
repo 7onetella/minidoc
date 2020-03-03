@@ -38,7 +38,7 @@ func (s *Search) SetApp(app *SimpleApp) {
 
 // SearchPage returns search page
 func (s *Search) Page() (title string, content tview.Primitive) {
-	s.InitSearchBar()
+	s.InitSearchBar("search")
 
 	s.ResultList = NewResultList(s)
 
@@ -62,11 +62,17 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	return "Search", s.Layout
 }
 
+func (s *Search) GetInstance() interface{} {
+	return s
+}
+
 var words = []string{"@new", "@generate", "@tag", "@untag", "@export", "@import"}
 
-func (s *Search) InitSearchBar() {
+func (s *Search) InitSearchBar(placeholder string) {
 	//log.Debug("resetting search bar")
-	s.SearchBar.AddInputField("", "", 0, nil, nil)
+
+	input := tview.NewInputField().SetFieldWidth(0).SetPlaceholder(placeholder)
+	s.SearchBar.AddFormItem(input)
 	s.SearchBar.SetBorderPadding(0, 1, 0, 0)
 	s.SearchBar.SetFieldTextColor(tcell.ColorYellow)
 	item := s.SearchBar.GetFormItem(0)
@@ -133,7 +139,7 @@ func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKe
 		}
 
 		if event.Key() == tcell.KeyCtrlSpace {
-			s.GoToSearchBar(true)
+			s.GoToSearchBar(true, "")
 			return nil
 		}
 
@@ -290,11 +296,11 @@ func (s *Search) GoToSearchResult() {
 	s.App.Draw()
 }
 
-func (s *Search) GoToSearchBar(clear bool) {
+func (s *Search) GoToSearchBar(clear bool, placeholder string) {
 	s.ResultList.SetSelectable(false, false)
 	if clear {
 		s.SearchBar.Clear(true)
-		s.InitSearchBar()
+		s.InitSearchBar(placeholder)
 	}
 	s.App.SetStatus("[white:darkcyan] Ctrl-h <- navigate left | Ctrl-l <- navigate right[white]")
 	s.App.Draw()

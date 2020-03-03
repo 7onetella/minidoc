@@ -42,6 +42,10 @@ func (n *New) Page() (title string, content tview.Primitive) {
 	return "New", n.Layout
 }
 
+func (n *New) GetInstance() interface{} {
+	return n
+}
+
 func (n *New) CreateAction() {
 	f := n.Form
 	jh := NewJsonMapWrapper(n.json)

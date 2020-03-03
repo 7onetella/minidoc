@@ -12,9 +12,14 @@ type SetAppAdapter struct{}
 func (a SetAppAdapter) SetApp(app *SimpleApp) {
 }
 
+func (a SetAppAdapter) GetInstance() interface{} {
+	return nil
+}
+
 type PageItem interface {
 	Page() (title string, content tview.Primitive)
 	SetApp(*SimpleApp)
+	GetInstance() interface{}
 }
 
 // Page object represent a page for Pages
@@ -45,6 +50,13 @@ func (p *PagesHandler) HasPage(title string) bool {
 	_, hasPage := p.PageIndex[title]
 	return hasPage
 	//testapp.Draw()
+}
+
+func (p *PagesHandler) GetPageItem(title string) PageItem {
+	indexStr := p.PageIndex[title]
+	index, _ := strconv.Atoi(indexStr)
+	log.Debugf("page index %d for %s", index, title)
+	return p.PageItems[index]
 }
 
 // GoToPrevPage goes to previous page

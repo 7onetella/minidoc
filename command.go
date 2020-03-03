@@ -9,6 +9,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"os"
 	"strings"
+	"time"
 )
 
 func (s *Search) HandleCommand(command string) {
@@ -86,7 +87,7 @@ func (s *Search) HandleCommand(command string) {
 			return
 		}
 		OpenVim(s.App, markdownFilePath)
-		s.App.SetStatus("[white:darkcyan]content generated[white]")
+		s.App.SetStatus("[white:darkcyan]markdown generated[white]")
 
 		// convert content to pdf if the extension is pdf
 		if extension == "pdf" {
@@ -111,14 +112,20 @@ func (s *Search) HandleCommand(command string) {
 
 			// delete temporary content in /tmp folder
 			DeleteFile(markdownFilePath)
+
+			t := s.App.PagesHandler.GetPageItem("Generated").GetInstance().(*TreePage)
+			t.RefreshRootNode()
+			t.App.SetFocus(t.Tree)
 			return
 		}
 
-		err = Exec([]string{"open", markdownFilePath})
-		if err != nil {
-			s.App.SetStatus("[black:red]opening content: " + err.Error() + "[white]")
-			return
-		}
+		t := s.App.PagesHandler.GetPageItem("Generated").GetInstance().(*TreePage)
+		t.RefreshRootNode()
+		t.App.SetFocus(t.Tree)
+
+		time.Sleep(250 * time.Millisecond)
+		s.GoToSearchBar(true, "search")
+		s.App.SetStatus("[white:darkcyan]markdown generated[white]")
 
 	case "list":
 		doctype := terms[1]

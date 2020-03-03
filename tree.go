@@ -127,6 +127,10 @@ func NewTree() *TreePage {
 	return t
 }
 
+func (t *TreePage) GetInstance() interface{} {
+	return t
+}
+
 func (t *TreePage) WalkGenDirAsNode(minidocGenDir string) *Node {
 	var nodes = map[string]*Node{}
 	t.Nodes = nodes

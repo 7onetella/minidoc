@@ -68,3 +68,7 @@ func (h *Help) Page() (title string, content tview.Primitive) {
 `)
 	return "Help", h.Content
 }
+
+func (h *Help) GetInstance() interface{} {
+	return h
+}
