@@ -205,6 +205,15 @@ func (t *TreePage) InputCapture() func(event *tcell.EventKey) *tcell.EventKey {
 						return nil
 					}
 				}
+			case 'n':
+				if t.SelectedNode != nil {
+					path := t.SelectedNode.Path
+					if filepath.Ext(path) == ".md" || filepath.Ext(path) == ".pdf" {
+						t.RenameFile(t.App, path)
+						t.RefreshRootNode()
+						t.App.SetFocus(t.Tree)
+					}
+				}
 			case 'r':
 				t.RefreshRootNode()
 				t.App.SetFocus(t.Tree)
@@ -269,4 +278,51 @@ func (t *TreePage) RefreshRootNode() {
 				fmt.Fprintln(t.Detail, content)
 			}
 		})
+}
+
+func (t *TreePage) RenameFile(app *SimpleApp, path string) {
+	base := path[:strings.LastIndex(path, "/")+1]
+	file := path[strings.LastIndex(path, "/")+1:]
+
+	form, input, pages := SingleEntryModalForm("Rename File", "Name:", file, 40, 7)
+
+	form.AddButton("Update", func() {
+		filename := input.GetText()
+		os.Rename(path, base+filename)
+		t.RefreshRootNode()
+		if err := t.App.SetRoot(t.App.Layout, true).Run(); err != nil {
+			panic(err)
+		}
+	})
+	form.AddButton("Cancel", func() {
+		if err := t.App.SetRoot(t.App.Layout, true).Run(); err != nil {
+			panic(err)
+		}
+	})
+
+	if err := app.SetRoot(pages, true).Run(); err != nil {
+		panic(err)
+	}
+}
+
+func SingleEntryModalForm(title, label, value string, width, height int) (*tview.Form, *tview.InputField, *tview.Pages) {
+	modal := func(p tview.Primitive, width, height int) tview.Primitive {
+		return tview.NewGrid().
+			SetColumns(0, width, 0).
+			SetRows(0, height, 0).
+			AddItem(p, 1, 1, 1, 1, 0, 0, true)
+	}
+	background := tview.NewTextView().SetTextColor(tcell.ColorBlue)
+	form := tview.NewForm()
+	form.AddInputField(label, value, 0, nil, nil)
+	form.SetBorderPadding(1, 1, 1, 1)
+	form.SetBorder(true)
+	form.SetFieldTextColor(tcell.ColorYellow)
+	form.SetTitle(title)
+	item := form.GetFormItem(0)
+	input, _ := item.(*tview.InputField)
+	pages := tview.NewPages().
+		AddPage("background", background, true, true).
+		AddPage("modal", modal(form, width, height), true, true)
+	return form, input, pages
 }
