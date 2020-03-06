@@ -21,12 +21,16 @@ type Search struct {
 	EditForm        *tview.Form
 	CurrentRowIndex int
 	debug           func(string)
+	RegionID        int
+	RegionCount     int
+	RegionDocIDs    map[int]string
 }
 
 func NewSearch() *Search {
 	s := &Search{
-		SearchBar: tview.NewForm(),
-		Layout:    tview.NewFlex(),
+		SearchBar:    tview.NewForm(),
+		Layout:       tview.NewFlex(),
+		RegionDocIDs: map[int]string{},
 	}
 	return s
 }
@@ -46,7 +50,9 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	s.Detail.SetBorder(true)
 	s.Detail.SetTitle("Preview")
 	s.Detail.SetDynamicColors(true)
+	s.Detail.SetRegions(true)
 	s.Detail.SetBorderPadding(0, 1, 2, 2)
+	s.Detail.SetInputCapture(s.PreviewInputCapture())
 
 	s.Columns = tview.NewFlex().SetDirection(tview.FlexColumn).
 		AddItem(s.ResultList, 0, 5, true).
@@ -141,6 +147,69 @@ func (s *Search) InputCapture(input *tview.InputField) func(event *tcell.EventKe
 		if event.Key() == tcell.KeyCtrlSpace {
 			s.GoToSearchBar(true, "")
 			return nil
+		}
+
+		return event
+	}
+}
+
+func (s *Search) PreviewInputCapture() func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		eventKey := event.Key()
+
+		switch eventKey {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 'n':
+				if s.RegionCount > 0 {
+					s.RegionID++
+					if s.RegionID%s.RegionCount == 0 {
+						s.RegionID = 0
+					}
+					regionID := fmt.Sprintf("%d", s.RegionID)
+					s.Detail.Highlight(regionID)
+				}
+				//s.App.StatusBar.SetText(fmt.Sprintf("region count: %d, region id: %d", s.RegionCount, s.RegionID))
+			case 'e':
+				doc, err := s.LoadMiniDocFromDB(s.CurrentRowIndex)
+				if err != nil {
+					log.Debugf("error getting json from curr row: %v", err)
+					return event
+				}
+				doc, changed := EditWithVim(s.App, doc)
+				if changed {
+					_, err = s.App.DataHandler.Write(doc)
+					if err != nil {
+						log.Errorf("error writing: %v", err)
+					}
+				}
+				s.Preview(DIRECTION_NONE)
+				return nil
+			case 'i':
+				s.Edit()
+			default:
+				if s.RegionCount > 0 {
+					//regionText := s.Detail.GetRegionText(fmt.Sprintf("%d", s.RegionID))
+
+					docid := s.RegionDocIDs[s.RegionID]
+					sslice := strings.Split(docid, ":")
+					doctype := sslice[0]
+					id := sslice[1]
+
+					doc, _ := s.App.DataHandler.BucketHandler.Read(toUnit32FromString(id), doctype)
+					if doc != nil {
+						doc.HandleEvent(event)
+						s.App.StatusBar.SetText(doc.GetTitle())
+					}
+				}
+				return nil
+			}
+
+		case tcell.KeyTab:
+			s.GoToSearchBar(false, "")
+			return nil
+		default:
+			return event
 		}
 
 		return event
@@ -307,6 +376,12 @@ func (s *Search) GoToSearchBar(clear bool, placeholder string) {
 	s.App.SetFocus(s.SearchBar)
 }
 
+func (s *Search) GoToPreview() {
+	s.App.SetFocus(s.Detail)
+	s.Detail.Highlight("0")
+	s.App.Draw()
+}
+
 func (s *Search) DelegateEventHandlingMiniDoc(event *tcell.EventKey) *tcell.EventKey {
 
 	// in search result
@@ -357,7 +432,8 @@ func (s *Search) Preview(direction int) {
 
 	content := ""
 	s.Detail.SetTitle(doc.GetIDString())
-
+	s.RegionID = 0
+	s.RegionCount = 0
 	for _, fieldName := range doc.GetDisplayFields() {
 		if fieldName == "type" || fieldName == "id" {
 			continue
@@ -367,20 +443,54 @@ func (s *Search) Preview(direction int) {
 		//s.debug("preview field for " + fieldNameCleaned)
 		v := jh.string(fieldName)
 		content += "\n"
-		content += fmt.Sprintf("[white]%s:[white]", fieldNameCleaned)
+		content += fmt.Sprintf("[white]%s:[white] ", fieldNameCleaned)
+
 		lines := strings.Split(v, "\n")
 		if len(lines) > 1 {
-			content += "\n"
 			for _, line := range lines {
-				content += fmt.Sprintf("[darkcyan]%s[darkcyan] \n", line)
+				content += "\n"
+				content += "[darkcyan]"
+				content += Transpose(line, s)
+				content += "[darkcyan]"
 			}
 		} else {
-			content += fmt.Sprintf(" [darkcyan]%s[darkcyan] \n", v)
+			content += "[darkcyan]"
+			content += Transpose(v, s)
+			content += "[darkcyan]"
 		}
+		content += "\n"
 	}
 
 	s.Detail.Clear()
-	fmt.Fprintf(s.Detail, "%s", content)
+	fmt.Fprintf(s.Detail, content)
+}
+
+func Transpose(line string, s *Search) string {
+	tokens := strings.Split(line, " ")
+	n := len(tokens)
+	content := make([]string, n)
+	for i, token := range tokens {
+		if strings.HasPrefix(token, "[") &&
+			strings.HasSuffix(token, "]") {
+			docid := token[1 : len(token)-1]
+			sslice := strings.Split(docid, ":")
+			doctype := sslice[0]
+			id := sslice[1]
+			doc, _ := s.App.DataHandler.BucketHandler.Read(toUnit32FromString(id), doctype)
+			if doc != nil {
+				content[i] = fmt.Sprintf(`["%d"][yellow]%s[darkcyan][""]`, s.RegionCount, doc.GetTitle())
+				s.RegionDocIDs[s.RegionCount] = docid
+			}
+			s.RegionCount++
+		} else {
+			content[i] = fmt.Sprintf("%s", token)
+		}
+	}
+	out := ""
+	for i := 0; i < n; i++ {
+		out += content[i] + " "
+	}
+	return out
 }
 
 func (s *Search) Edit() {

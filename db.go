@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/joyrexus/buckets"
+	"strconv"
 	"time"
 )
 
@@ -233,4 +234,9 @@ func toBytes(value uint32) []byte {
 
 func toUint32(bs []byte) uint32 {
 	return binary.LittleEndian.Uint32(bs)
+}
+
+func toUnit32FromString(s string) uint32 {
+	n, _ := strconv.Atoi(s)
+	return uint32(n)
 }

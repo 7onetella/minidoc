@@ -91,7 +91,8 @@ func (rl *ResultList) InputCapture() func(event *tcell.EventKey) *tcell.EventKey
 			s.ToggleAllRows()
 			return nil
 		case tcell.KeyTab:
-			s.GoToSearchBar(false, "")
+			//s.GoToSearchBar(false, "")
+			s.GoToPreview()
 			return nil
 		case tcell.KeyEnter:
 			s.Preview(DIRECTION_NONE)

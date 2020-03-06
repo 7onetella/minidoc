@@ -17,7 +17,7 @@ var indexedFields = map[string][]string{
 var excludedFields = map[string][]string{
 	"url":  {"url"},
 	"note": {},
-	"todo": {},
+	"todo": {"detail"},
 }
 
 // --------------------------------------------------------------------------------
@@ -147,8 +147,9 @@ func (d *NoteDoc) GetMarkdown() string {
 // --------------------------------------------------------------------------------
 type ToDoDoc struct {
 	BaseDoc
-	Task string `json:"task"`
-	Done bool   `json:"done"`
+	Task   string `json:"task"`
+	Detail string `json:"detail"`
+	Done   bool   `json:"done"`
 }
 
 func (d *ToDoDoc) GetJSON() interface{} {
@@ -160,6 +161,7 @@ func (d *ToDoDoc) GetDisplayFields() []string {
 		"id",
 		"type",
 		"task",
+		"detail",
 		"done",
 		"tags",
 		"created_date",
@@ -172,6 +174,10 @@ func (d *ToDoDoc) GetEditFields() []string {
 		"done",
 		"tags",
 	}
+}
+
+func (d *ToDoDoc) GetViEditFields() []string {
+	return []string{"detail"}
 }
 
 func (d *ToDoDoc) HandleEvent(event *tcell.EventKey) {
