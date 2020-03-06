@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/RoaringBitmap/roaring v0.4.20 // indirect
+	github.com/atotto/clipboard v0.1.2
 	github.com/blevesearch/bleve v0.8.1
 	github.com/blevesearch/blevex v0.0.0-20190916190636-152f0fe5c040 // indirect
 	github.com/blevesearch/cld2 v0.0.0-20150916130542-10f17c049ec9 // indirect

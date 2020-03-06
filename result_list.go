@@ -47,6 +47,9 @@ func (rl *ResultList) InputCapture() func(event *tcell.EventKey) *tcell.EventKey
 		switch eventKey {
 		case tcell.KeyRune:
 			switch event.Rune() {
+			case 'c':
+				s.ClipboardCopy()
+				return nil
 			case 'i':
 				s.Edit()
 			case 'j':
@@ -91,8 +94,10 @@ func (rl *ResultList) InputCapture() func(event *tcell.EventKey) *tcell.EventKey
 			s.ToggleAllRows()
 			return nil
 		case tcell.KeyTab:
-			//s.GoToSearchBar(false, "")
 			s.GoToPreview()
+			return nil
+		case tcell.KeyBacktab:
+			s.GoToSearchBar(false, "")
 			return nil
 		case tcell.KeyEnter:
 			s.Preview(DIRECTION_NONE)

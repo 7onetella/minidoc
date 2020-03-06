@@ -2,6 +2,7 @@ package minidoc
 
 import (
 	"fmt"
+	"github.com/atotto/clipboard"
 	"strconv"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 type Search struct {
 	App             *SimpleApp
 	SearchBar       *tview.Form
+	Rows            *tview.Flex
 	ResultList      *ResultList
 	Detail          *tview.TextView
 	Columns         *tview.Flex
@@ -24,6 +26,7 @@ type Search struct {
 	RegionID        int
 	RegionCount     int
 	RegionDocIDs    map[int]string
+	Referenced      *tview.TextView
 }
 
 func NewSearch() *Search {
@@ -54,15 +57,22 @@ func (s *Search) Page() (title string, content tview.Primitive) {
 	s.Detail.SetBorderPadding(0, 1, 2, 2)
 	s.Detail.SetInputCapture(s.PreviewInputCapture())
 
+	s.Referenced = tview.NewTextView()
+	s.Referenced.SetBorder(true)
+	s.Referenced.SetTitle("Referenced")
+	s.Referenced.SetDynamicColors(true)
+	s.Referenced.SetRegions(true)
+	s.Referenced.SetBorderPadding(0, 1, 2, 2)
+
 	s.Columns = tview.NewFlex().SetDirection(tview.FlexColumn).
 		AddItem(s.ResultList, 0, 5, true).
 		AddItem(s.Detail, 0, 5, false)
 
-	rows := tview.NewFlex().SetDirection(tview.FlexRow).
+	s.Rows = tview.NewFlex().SetDirection(tview.FlexRow).
 		AddItem(s.SearchBar, 2, 1, true).
 		AddItem(s.Columns, 0, 10, false)
 
-	s.Layout.AddItem(rows, 0, 1, true)
+	s.Layout.AddItem(s.Rows, 0, 1, true)
 	s.Layout.SetBorder(true).SetBorderPadding(1, 1, 2, 2)
 
 	return "Search", s.Layout
@@ -168,6 +178,9 @@ func (s *Search) PreviewInputCapture() func(event *tcell.EventKey) *tcell.EventK
 					}
 					regionID := fmt.Sprintf("%d", s.RegionID)
 					s.Detail.Highlight(regionID)
+					s.Referenced.Clear()
+
+					s.ShowNextReferenced()
 				}
 				//s.App.StatusBar.SetText(fmt.Sprintf("region count: %d, region id: %d", s.RegionCount, s.RegionID))
 			case 'e':
@@ -199,7 +212,7 @@ func (s *Search) PreviewInputCapture() func(event *tcell.EventKey) *tcell.EventK
 					doc, _ := s.App.DataHandler.BucketHandler.Read(toUnit32FromString(id), doctype)
 					if doc != nil {
 						doc.HandleEvent(event)
-						s.App.StatusBar.SetText(doc.GetTitle())
+						//s.App.StatusBar.SetText(doc.GetTitle())
 					}
 				}
 				return nil
@@ -207,6 +220,11 @@ func (s *Search) PreviewInputCapture() func(event *tcell.EventKey) *tcell.EventK
 
 		case tcell.KeyTab:
 			s.GoToSearchBar(false, "")
+			s.HideReferenced()
+			return nil
+		case tcell.KeyBacktab:
+			s.GoToSearchResult()
+			s.HideReferenced()
 			return nil
 		default:
 			return event
@@ -214,6 +232,46 @@ func (s *Search) PreviewInputCapture() func(event *tcell.EventKey) *tcell.EventK
 
 		return event
 	}
+}
+
+func (s *Search) ShowNextReferenced() {
+	docid := s.RegionDocIDs[s.RegionID]
+	sslice := strings.Split(docid, ":")
+	if len(sslice) != 2 {
+		return
+	}
+	doctype := sslice[0]
+	id := sslice[1]
+
+	doc, _ := s.App.DataHandler.BucketHandler.Read(toUnit32FromString(id), doctype)
+	if doc != nil {
+		json := JsonMapFrom(doc)
+		jh := NewJsonMapWrapper(json)
+
+		content := ""
+		s.Referenced.SetTitle(doc.GetIDString())
+		for _, fieldName := range doc.GetDisplayFields() {
+			if fieldName == "type" || fieldName == "id" {
+				continue
+			}
+
+			fieldNameCleaned := strings.Replace(fieldName, "_", " ", -1)
+			v := jh.string(fieldName)
+			content += "\n"
+			content += fmt.Sprintf("[white]%s:[white] ", fieldNameCleaned)
+			content += "[darkcyan]"
+			content += Transpose(v, s)
+			content += "[darkcyan]"
+			content += "\n"
+		}
+		fmt.Fprintf(s.Referenced, content)
+		s.Rows.RemoveItem(s.Referenced)
+		s.Rows.AddItem(s.Referenced, 0, 3, false)
+	}
+}
+
+func (s *Search) HideReferenced() {
+	s.Rows.RemoveItem(s.Referenced)
 }
 
 const typeColumnIndex = 0
@@ -379,6 +437,7 @@ func (s *Search) GoToSearchBar(clear bool, placeholder string) {
 func (s *Search) GoToPreview() {
 	s.App.SetFocus(s.Detail)
 	s.Detail.Highlight("0")
+	s.ShowNextReferenced()
 	s.App.Draw()
 }
 
@@ -599,6 +658,21 @@ func (s *Search) ToggleAllRows() {
 			s.App.ForceDraw()
 		}
 	}
+}
+
+func (s *Search) ClipboardCopy() {
+	content := ""
+	for i := 0; i < s.ResultList.GetRowCount(); i++ {
+		log.Debugf("current row %d", s.CurrentRowIndex)
+		doc, err := s.LoadMiniDocFromDB(i)
+		if err != nil {
+			log.Errorf("minidoc from failed: %v", err)
+			return
+		}
+		content += "[" + doc.GetIDString() + "]\n"
+		content += "\n"
+	}
+	clipboard.WriteAll(content)
 }
 
 func (s *Search) ToggleSelected() {
