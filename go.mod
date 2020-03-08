@@ -3,6 +3,7 @@ module github.com/7onetella/minidoc
 go 1.13
 
 require (
+	github.com/0xAX/notificator v0.0.0-20191016112426-3962a5ea8da1
 	github.com/RoaringBitmap/roaring v0.4.20 // indirect
 	github.com/atotto/clipboard v0.1.2
 	github.com/blevesearch/bleve v0.8.1

@@ -88,6 +88,7 @@ func (s *Search) HandleCommand(command string) {
 		}
 		OpenVim(s.App, markdownFilePath)
 		s.App.SetStatus("[white:darkcyan]markdown generated[white]")
+		s.Notify("Status", "markdown generated")
 
 		// convert content to pdf if the extension is pdf
 		if extension == "pdf" {

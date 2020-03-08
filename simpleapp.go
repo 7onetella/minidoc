@@ -187,10 +187,13 @@ func (app *SimpleApp) GetInputCaptureFunc() func(event *tcell.EventKey) *tcell.E
 		case tcell.KeyCtrlD:
 			app.GoToDebugView()
 		case tcell.KeyCtrlN:
-			if err := NewDocFlow("note", app); err != nil {
-				return nil
-			}
+			NewDocFlow("note", app)
 			defer app.Draw()
+			return nil
+		case tcell.KeyCtrlU:
+			NewDocFlow("url", app)
+			defer app.Draw()
+			return nil
 		case tcell.KeyCtrlC:
 			app.Exit()
 		default:

@@ -2,6 +2,7 @@ package minidoc
 
 import (
 	"fmt"
+	"github.com/0xAX/notificator"
 	"github.com/atotto/clipboard"
 	"strconv"
 	"strings"
@@ -718,4 +719,13 @@ func (s *Search) LoadMiniDocFromDB(row int) (MiniDoc, error) {
 func (s *Search) UnLoadEdit() {
 	s.GoToSearchResult()
 	s.Preview(DIRECTION_NONE)
+}
+
+func (s *Search) Notify(title, text string) {
+	notify := notificator.New(notificator.Options{
+		DefaultIcon: "icon/default.png",
+		AppName:     "Minidoc",
+	})
+
+	notify.Push(title, text, "/home/user/icon.png", notificator.UR_CRITICAL)
 }
