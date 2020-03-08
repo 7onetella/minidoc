@@ -50,6 +50,7 @@ require (
 	github.com/tebeka/snowball v0.3.0 // indirect
 	github.com/tecbot/gorocksdb v0.0.0-20191019123150-400c56251341 // indirect
 	go.etcd.io/bbolt v1.3.3 // indirect
-	golang.org/x/net v0.0.0-20190923162816-aa69164e4478 // indirect
+	golang.org/x/net v0.0.0-20190923162816-aa69164e4478
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/xmlpath.v2 v2.0.0-20150820204837-860cbeca3ebc
 )

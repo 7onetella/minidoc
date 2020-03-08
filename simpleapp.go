@@ -194,6 +194,10 @@ func (app *SimpleApp) GetInputCaptureFunc() func(event *tcell.EventKey) *tcell.E
 			NewDocFlow("url", app)
 			defer app.Draw()
 			return nil
+		case tcell.KeyCtrlT:
+			NewDocFlow("todo", app)
+			defer app.Draw()
+			return nil
 		case tcell.KeyCtrlC:
 			app.Exit()
 		default:
